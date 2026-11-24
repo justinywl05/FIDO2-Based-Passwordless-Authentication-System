@@ -7,7 +7,7 @@ An integrated web portal and management system developed as a Final Year Project
 ## 📄 Project Documentation & Report
 
 The comprehensive project documentation and written analysis have been published:
-- **[Read the Full FYP Written Report](./docs/FYP_Report.pdf)** *(replace or update with your link/path)*
+Final Year Project Written Report.pdf
 
 ---
 
@@ -38,24 +38,7 @@ The comprehensive project documentation and written analysis have been published
 
 ### Installation & Run
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/nexus-university-web-portal.git
-   cd nexus-university-web-portal
-   ```
-
-2. **Configure Database & Connection String:**
-   Update `appsettings.json` in the backend project with your local database connection string.
-
-3. **Run the Backend:**
-   ```bash
-   cd AuthBackend
-   dotnet restore
-   dotnet run
-   ```
-
-4. **Access the Portal:**
-   Open `https://localhost:5001` (or your configured port) in your browser.
+Refer to the appendix in the written report
 
 ---
 
