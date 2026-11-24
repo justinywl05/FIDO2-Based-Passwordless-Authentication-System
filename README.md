@@ -15,7 +15,7 @@ The comprehensive project documentation and written analysis have been published
 
 - **Secure Authentication & Role Management**: Multi-tier authentication system for students, faculty, and administrators.
 - **Dynamic QR Code Integration**: Fast, contact-free verification and attendance tracking via generated QR codes.
-- **Student & Staff Portals**: Centralized dashboard to view schedules, profile details, and administrative updates.
+- **Student & Staff Portals**: Centralized dashboard to view, profile details, and administrative updates.
 - **RESTful API Backend**: Scalable backend architecture handling auth tokens, session validation, and database operations.
 
 ---
