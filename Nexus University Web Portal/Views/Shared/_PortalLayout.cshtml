@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Nexus Portal</title>
+    
+    <!-- Premium Icons and Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Custom styling system -->
+    <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />
+    
+    <!-- ChartJS for dashboards -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Floating background blobs -->
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="portal-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span class="accent-gradient-text">NEXUS</span>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="/Portal/Dashboard">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="/Portal/Profile">
+                        <i class="fas fa-user-circle"></i>
+                        <span>My Profile</span>
+                    </a>
+                </li>
+
+                @if (ViewBag.Role == "admin")
+                {
+                    <li style="margin: 20px 16px 8px; font-size: 0.675rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; white-space: nowrap; overflow: hidden;">
+                        System Admin
+                    </li>
+                    <li class="sidebar-menu-item">
+                        <a href="/Portal/AdminDevices">
+                            <i class="fas fa-laptop-medical"></i>
+                            <span>Device Mgmt</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item">
+                        <a href="/Portal/AdminSessions">
+                            <i class="fas fa-users-cog"></i>
+                            <span>Session Mgmt</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item">
+                        <a href="/Portal/SecurityDashboard">
+                            <i class="fas fa-shield-halved"></i>
+                            <span>Security Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item">
+                        <a href="/Portal/AdminUserCreation">
+                            <i class="fas fa-user-plus"></i>
+                            <span>Create User</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item">
+                        <a href="/Portal/AdminRegistration">
+                            <i class="fas fa-qrcode"></i>
+                            <span>Enroll Device</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item">
+                        <a href="/Portal/AdminRoles">
+                            <i class="fas fa-user-shield"></i>
+                            <span>Roles & Policies</span>
+                        </a>
+                    </li>
+                }
+
+                @if (ViewBag.Role == "student" || ViewBag.Role == "lecturer")
+                {
+                    <li style="margin: 20px 16px 8px; font-size: 0.675rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; white-space: nowrap; overflow: hidden;">
+                        My Security
+                    </li>
+                    <li class="sidebar-menu-item">
+                        <a href="/Portal/MyDevices">
+                            <i class="fas fa-mobile-screen-button"></i>
+                            <span>My Devices</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item">
+                        <a href="/Portal/MySessions">
+                            <i class="fas fa-shield-halved"></i>
+                            <span>My Sessions</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-snippet">
+                    <div class="avatar-initials">
+                        @if (!string.IsNullOrEmpty(ViewBag.UserName))
+                        {
+                            @string.Concat(ViewBag.UserName.Split(' ')[0][0], ViewBag.UserName.Split(' ').Length > 1 ? ViewBag.UserName.Split(' ')[1][0] : "")
+                        }
+                        else
+                        {
+                            <span>U</span>
+                        }
+                    </div>
+                    <div class="user-info-text">
+                        <span class="user-name">@ViewBag.UserName</span>
+                        <span class="user-role">@ViewBag.UserId</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <!-- Header bar -->
+            <header class="main-header">
+                <div class="header-start">
+                    <button class="header-btn" id="sidebar-toggle-btn" title="Toggle Navigation">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="header-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search portal resources, files..." />
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    <!-- Dynamic Session Expiry Display -->
+                    <div class="session-expiry-chip" title="Zero-trust inactivity lifecycle validator">
+                        <i class="fas fa-hourglass-half" style="color: var(--accent-color);"></i>
+                        <span>Expiry: <strong id="session-countdown-timer" style="color: var(--text-primary);">05:00</strong></span>
+                    </div>
+
+                    <!-- Demo Role Badge -->
+                    <div class="demo-badge @ViewBag.Role">
+                        <i class="fas fa-shield"></i>
+                        <span>@ViewBag.Role</span>
+                    </div>
+
+                    <!-- Theme Toggler -->
+                    <button class="header-btn" id="theme-toggle-btn" title="Toggle Light/Dark Theme">
+                        <i class="fas fa-sun"></i>
+                    </button>
+
+                    <!-- Notifications Dropdown (Interactive representation) -->
+                    <button class="header-btn" onclick="showToast('No new notifications', 'info')" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge"></span>
+                    </button>
+
+                    <!-- Log Out -->
+                    <a href="/Portal/Logout" class="header-btn" title="Sign Out" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); margin-left: 4px;">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+
+
+                </div>
+            </header>
+
+            <!-- Page Context Render -->
+            <main class="page-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="~/js/portal.js" asp-append-version="true"></script>
+    <script>
+        // Zero Trust Session Inactivity Timer simulation
+        document.addEventListener("DOMContentLoaded", () => {
+            const timerLabel = document.getElementById("session-countdown-timer");
+            if (!timerLabel) return;
+
+            let remainingSeconds = 300; // 5 minutes
+
+            // Support time-acceleration simulator button in header for easy evaluation
+            timerLabel.style.cursor = "pointer";
+            timerLabel.title = "Click to accelerate time by 10x (Simulate inactivity)";
+            
+            let speedMultiplier = 1;
+            timerLabel.addEventListener("click", () => {
+                speedMultiplier = speedMultiplier === 1 ? 10 : 1;
+                showToast(speedMultiplier === 10 ? "Simulation Mode: Inactivity speeded up 10x!" : "Simulation Mode: Normal speed restored.", "info");
+                timerLabel.style.color = speedMultiplier === 10 ? "#ef4444" : "var(--text-primary)";
+            });
+
+            const timer = setInterval(() => {
+                remainingSeconds -= speedMultiplier;
+                if (remainingSeconds <= 0) {
+                    clearInterval(timer);
+                    timerLabel.textContent = "00:00";
+                    showToast("Session expired due to inactivity!", "error");
+                    setTimeout(() => {
+                        window.location.href = "/Portal/Logout?expired=true";
+                    }, 1000);
+                    return;
+                }
+
+                const mins = Math.floor(remainingSeconds / 60);
+                const secs = remainingSeconds % 60;
+                timerLabel.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }, 1000);
+
+            // Reset timer on user mouse move or key press (sliding window action)
+            let lastInteraction = Date.now();
+            const resetTimer = () => {
+                // Throttle reset calls to not overload server cookies
+                if (Date.now() - lastInteraction > 15000) { 
+                    lastInteraction = Date.now();
+                    // Send silent ping request to update backend portal_last_active cookie
+                    fetch("/Portal/Dashboard", { method: "HEAD" });
+                    
+                    if (speedMultiplier === 1) {
+                        remainingSeconds = 300; // Reset countdown
+                        showToast("User activity detected. Session token refreshed.", "success");
+                    }
+                }
+            };
+
+            document.addEventListener("mousemove", resetTimer);
+            document.addEventListener("keypress", resetTimer);
+        });
+
+
+
+        // BFCache (Back-Forward Cache) reload guard
+        // Forces a full refresh from the server when swiping back or navigating via browser history.
+        window.addEventListener("pageshow", (event) => {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

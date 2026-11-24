@@ -1,0 +1,234 @@
+@model IEnumerable<NexusUniversityWebPortal.AuthBackend.Models.AuthSession>
+
+@{
+    ViewData["Title"] = "Session Management";
+    Layout = "~/Views/Shared/_PortalLayout.cshtml";
+
+    // Resolve user from either Device.User or direct session.User navigation
+    Func<NexusUniversityWebPortal.AuthBackend.Models.AuthSession, NexusUniversityWebPortal.AuthBackend.Models.User?> resolveUser =
+        s => s.Device?.User ?? s.User;
+
+    var adminCount = Model.Count(s => resolveUser(s)?.RoleId == "admin");
+    var lecturerCount = Model.Count(s => resolveUser(s)?.RoleId == "lecturer");
+    var studentCount = Model.Count(s => resolveUser(s)?.RoleId == "student");
+}
+
+<div class="page-title-area">
+    <div>
+        <h1 class="page-title"><i class="fas fa-users-cog" style="color: var(--accent-color); margin-right: 8px;"></i> Session Management</h1>
+        <p class="page-subtitle">Monitor current portal users and terminate active sessions if necessary.</p>
+    </div>
+    <div>
+        <button class="btn-portal-secondary" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05);" onclick="terminateAllOtherSessions()">
+            <i class="fas fa-hand-slash"></i> Terminate All Other Sessions
+        </button>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="stat-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+    <div class="stat-card glass-panel" style="padding: 16px 24px;">
+        <div class="stat-info">
+            <span class="stat-label">Active Administrators</span>
+            <span class="stat-value" id="admin-count">@adminCount</span>
+        </div>
+        <div class="stat-icon" style="color: #f59e0b; background: rgba(245, 158, 11, 0.1);"><i class="fas fa-user-shield"></i></div>
+    </div>
+    <div class="stat-card glass-panel" style="padding: 16px 24px;">
+        <div class="stat-info">
+            <span class="stat-label">Active Lecturers</span>
+            <span class="stat-value" id="lecturer-count">@lecturerCount</span>
+        </div>
+        <div class="stat-icon" style="color: #10b981; background: rgba(16, 185, 129, 0.1);"><i class="fas fa-chalkboard-teacher"></i></div>
+    </div>
+    <div class="stat-card glass-panel" style="padding: 16px 24px;">
+        <div class="stat-info">
+            <span class="stat-label">Active Students</span>
+            <span class="stat-value" id="student-count">@studentCount</span>
+        </div>
+        <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+    </div>
+</div>
+
+<!-- Sessions Table -->
+<div class="glass-panel" style="padding: 24px;">
+    <h3 class="card-title" style="margin-bottom: 20px;">Active Authentication Sessions</h3>
+    <div class="table-responsive">
+        <table class="portal-table" id="sessions-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>IP Address</th>
+                    <th>Location</th>
+                    <th>Device Link</th>
+                    <th>Browser / OS</th>
+                    <th>Login Time (UTC+8)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var session in Model)
+                {
+                    var isSelf = session.SessionToken == Context.Request.Cookies["portal_session_token"];
+                    var sessionUser = session.Device?.User ?? session.User;
+                    var userInitials = sessionUser != null
+                        ? string.Concat(
+                            sessionUser.FullName.Split(' ')[0][0],
+                            sessionUser.FullName.Split(' ').Length > 1 ? sessionUser.FullName.Split(' ')[1][0].ToString() : "")
+                        : "??";
+                    var avatarColor = sessionUser?.RoleId == "admin" ? "#f59e0b" : sessionUser?.RoleId == "lecturer" ? "#10b981" : "#8b5cf6";
+                    
+                    var locationStr = "Johor, MY";
+                    if (session.IpAddress == "192.168.1.50" || session.IpAddress == "127.0.0.1" || session.IpAddress == "::1") 
+                    {
+                        locationStr = "Kuala Lumpur, MY";
+                    }
+                    else if (session.IpAddress == "115.135.12.89") 
+                    {
+                        locationStr = "Selangor, MY";
+                    }
+                    else if (session.IpAddress == "175.143.90.104") 
+                    {
+                        locationStr = "Penang, MY";
+                    }
+                    else if (!string.IsNullOrEmpty(session.IpAddress))
+                    {
+                        var parts = session.IpAddress.Split('.');
+                        if (parts.Length > 0 && int.TryParse(parts[parts.Length - 1], out int lastOctet))
+                        {
+                            var locations = new[] { "Johor, MY", "Kuala Lumpur, MY", "Selangor, MY", "Penang, MY", "Melaka, MY", "Perak, MY", "Negeri Sembilan, MY" };
+                            locationStr = locations[Math.Abs(lastOctet) % locations.Length];
+                        }
+                    }
+
+                    var loginTimeStr = session.CreatedAt.AddHours(8).ToString("dd MMM yyyy, hh:mm:ss tt");
+
+                    // Parse real UserAgent from session record (set during FIDO2 login)
+                    var ua = session.UserAgent ?? "";
+                    var browserOsStr = "Unknown Browser";
+                    if (!string.IsNullOrEmpty(ua))
+                    {
+                        var browser = ua.Contains("Edg/") ? "Edge"
+                            : ua.Contains("Chrome/") ? "Chrome"
+                            : ua.Contains("Firefox/") ? "Firefox"
+                            : ua.Contains("Safari/") && !ua.Contains("Chrome") ? "Safari"
+                            : "Browser";
+                        var os = ua.Contains("iPhone") || ua.Contains("iPad") ? "iOS"
+                            : ua.Contains("Android") ? "Android"
+                            : ua.Contains("Windows") ? "Windows"
+                            : ua.Contains("Macintosh") ? "macOS"
+                            : ua.Contains("Linux") ? "Linux"
+                            : "Unknown OS";
+                        browserOsStr = $"{browser} / {os}";
+                    }
+                    else if (session.Device != null)
+                    {
+                        browserOsStr = session.Device.DeviceType.Equals("Mobile", StringComparison.OrdinalIgnoreCase) ? "Safari / iOS"
+                            : session.Device.DeviceType.Equals("Tablet", StringComparison.OrdinalIgnoreCase) ? "Safari / iPadOS"
+                            : session.Device.DeviceName.Contains("MacBook", StringComparison.OrdinalIgnoreCase) ? "Chrome / macOS"
+                            : "Chrome / Windows";
+                    }
+                    
+                    <tr class="session-row @(isSelf ? "current-session" : "")" style="@(isSelf ? "background: rgba(var(--accent-rgb), 0.03);" : "")">
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                 <div class="avatar-initials" style="width: 32px; height: 32px; font-size: 0.8rem; border-color: @avatarColor; color: @avatarColor;">@userInitials</div>
+                                 <div>
+                                     <span style="font-weight: 600; display: block;">@(sessionUser?.FullName ?? "System") @(isSelf ? "(You)" : "")</span>
+                                     <span style="font-size: 0.7rem; color: var(--text-muted);">ID: @(sessionUser?.StudentStaffId ?? "N/A")</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td><code>@session.IpAddress</code></td>
+                        <td><i class="fas fa-map-marker-alt" style="color: @(isSelf ? "var(--accent-color)" : "var(--text-muted)");"></i> @locationStr</td>
+                        <td>
+                            <span style="font-weight: 500;"><i class="fas fa-laptop" style="font-size: 0.85rem; margin-right: 4px;"></i> @(session.Device?.DeviceName ?? "Primary Device")</span>
+                        </td>
+                        <td>@browserOsStr</td>
+                        <td>@loginTimeStr</td>
+                        <td>
+                            @if (isSelf)
+                            {
+                                <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-color); text-transform: uppercase;">Current Session</span>
+                            }
+                            else
+                            {
+                                <button class="btn-portal-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #ef4444; border-color: rgba(239,68,68,0.2);" onclick="terminateSession(this, '@session.AuthSessionId', '@(session.Device?.User?.FullName ?? "User")')">Terminate</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function terminateSession(button, sessionId, name) {
+            const formData = new FormData();
+            formData.append("sessionId", sessionId);
+
+            fetch("/Portal/ActionTerminateSession", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const row = button.closest("tr");
+                    row.style.transform = "translateX(50px)";
+                    row.style.opacity = "0";
+                    row.style.transition = "all 0.3s ease";
+                    
+                    setTimeout(() => {
+                        row.remove();
+                        showToast(`Session for ${name} terminated!`, "success");
+                        // Reload briefly to update statistical count cards
+                        setTimeout(() => window.location.reload(), 800);
+                    }, 300);
+                } else {
+                    showToast("Error terminating session", "error");
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+        function terminateAllOtherSessions() {
+            const formData = new FormData();
+            formData.append("currentUserName", "@ViewBag.FullName");
+
+            fetch("/Portal/ActionTerminateAllOther", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.count > 0) {
+                    const rows = document.querySelectorAll("#sessions-table tbody tr");
+                    rows.forEach(row => {
+                        if (!row.classList.contains("current-session")) {
+                            row.style.transform = "translateX(50px)";
+                            row.style.opacity = "0";
+                            row.style.transition = "all 0.3s ease";
+                            
+                            setTimeout(() => {
+                                row.remove();
+                            }, 300);
+                        }
+                    });
+                    
+                    setTimeout(() => {
+                        showToast(`Killed ${data.count} active user sessions!`, "warning");
+                        document.getElementById("lecturer-count").textContent = "0";
+                        document.getElementById("student-count").textContent = "0";
+                    }, 350);
+                } else {
+                    showToast("No other active sessions to terminate.", "info");
+                }
+            })
+            .catch(err => console.error(err));
+        }
+    </script>
+}
+

@@ -1,0 +1,43 @@
+=========================================================
+FIDO2 MIGRATION & COMPATIBILITY UPDATE SUMMARY
+=========================================================
+Date: June 23, 2026
+
+1. BACKGROUND & PROBLEM
+---------------------------------------------------------
+The project was previously configured with the NuGet package Fido2 (v4.0.1) but was facing multiple compilation failures. This was due to:
+- Missing dependency on Fido2.AspNet package which contains the AddFido2 Dependency Injection (DI) extensions.
+- Deprecated/obsolete properties in Fido2NetLib.Objects.AuthenticatorSelection (e.g. RequireResidentKey).
+- Signature changes in IFido2.RequestNewCredential and IFido2.MakeNewCredentialAsync, which now require RequestNewCredentialParams and MakeNewCredentialParams respectively in v4.x.
+- A change in the return type of MakeNewCredentialAsync, which now returns a RegisteredPublicKeyCredential object instead of a wrapper result (CredentialMakeResult). Fido2NetLib now throws exceptions on validation failure instead of returning an error status.
+
+2. RESOLUTION & CHANGES IMPLEMENTED
+---------------------------------------------------------
+The following changes were made to restore compilation and upgrade the codebase to Fido2NetLib v4.x:
+
+A. Package Dependencies
+- Installed the Fido2.AspNet (v4.0.1) NuGet package.
+
+B. Program.cs
+- Added "using Fido2NetLib;" at the top of the file to resolve builder.Services.AddFido2 extension method.
+
+C. Services/Fido2Service.cs
+- Updated GenerateRegisterOptionsAsync to construct AuthenticatorSelection using the new ResidentKey property:
+  ResidentKey = ResidentKeyRequirement.Discouraged
+- Updated GenerateRegisterOptionsAsync to call RequestNewCredential using the new RequestNewCredentialParams class.
+- Updated VerifyRegisterResponseAsync return type to Task<RegisteredPublicKeyCredential>.
+- Updated VerifyRegisterResponseAsync to call MakeNewCredentialAsync using the new MakeNewCredentialParams class.
+
+D. Controllers/AuthController.cs
+- Added "using Fido2NetLib.Objects;" at the top.
+- Wrapped the call to VerifyRegisterResponseAsync in a try/catch block to intercept validation exceptions and return a "400 BadRequest" containing the failure message.
+- Replaced references to makeResult.Result with direct properties on the returned RegisteredPublicKeyCredential object (e.g. makeResult.Id, makeResult.PublicKey, makeResult.SignCount, and makeResult.AttestationFormat).
+- Stored the actual device transport array into a comma-separated string if available, falling back to "internal".
+
+3. VERIFICATION & BUILD STATUS
+---------------------------------------------------------
+- Ran "dotnet build" and verified that the project compiles with 0 warnings and 0 errors.
+- Build output:
+  FYP.AuthBackend -> C:\Users\user\Desktop\FYP DEVELOPMENT\FYP.AuthBackend\bin\Debug\net9.0\FYP.AuthBackend.dll
+
+=========================================================

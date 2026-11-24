@@ -1,0 +1,130 @@
+@model IEnumerable<NexusUniversityWebPortal.AuthBackend.Models.AuthSession>
+
+@{
+    ViewData["Title"] = "My Sessions";
+    Layout = "~/Views/Shared/_PortalLayout.cshtml";
+    var totalSessions = Model.Count();
+    var otherSessions = Model.Count(s => s.SessionToken != Context.Request.Cookies["portal_session_token"]);
+}
+
+<div class="page-title-area">
+    <div>
+        <h1 class="page-title"><i class="fas fa-shield-halved" style="color: var(--accent-color); margin-right: 8px;"></i> My Active Sessions</h1>
+        <p class="page-subtitle">Review and revoke active login sessions on your account. Only your own sessions are shown.</p>
+    </div>
+    <div>
+        <button class="btn-portal-secondary" style="color:#ef4444;border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.05);" onclick="terminateAllOwnOther()">
+            <i class="fas fa-hand-slash"></i> Sign Out All Other Devices
+        </button>
+    </div>
+</div>
+
+<div class="stat-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+    <div class="stat-card glass-panel" style="padding: 16px 24px;">
+        <div class="stat-info"><span class="stat-label">Total Active Sessions</span><span class="stat-value">@totalSessions</span></div>
+        <div class="stat-icon"><i class="fas fa-globe"></i></div>
+    </div>
+    <div class="stat-card glass-panel" style="padding: 16px 24px;">
+        <div class="stat-info"><span class="stat-label">Current Session</span><span class="stat-value" style="color:#10b981;">1</span></div>
+        <div class="stat-icon" style="color:#10b981;background:rgba(16,185,129,0.1);"><i class="fas fa-circle-dot"></i></div>
+    </div>
+    <div class="stat-card glass-panel" style="padding: 16px 24px;">
+        <div class="stat-info"><span class="stat-label">Other Devices</span><span class="stat-value" id="other-count" style="color:@(otherSessions > 0 ? "#f59e0b" : "inherit");">@otherSessions</span></div>
+        <div class="stat-icon" style="color:#f59e0b;background:rgba(245,158,11,0.1);"><i class="fas fa-laptop"></i></div>
+    </div>
+</div>
+
+<div class="glass-panel" style="padding: 24px;">
+    <h3 class="card-title" style="margin-bottom: 20px;">Session Activity</h3>
+    <div class="table-responsive">
+        <table class="portal-table" id="my-sessions-table">
+            <thead>
+                <tr><th>Device</th><th>IP Address</th><th>Browser / OS</th><th>Login Time (UTC+8)</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted);">
+                        <i class="fas fa-shield-halved" style="font-size:2rem;display:block;margin-bottom:12px;opacity:0.3;"></i>No active sessions found.
+                    </td></tr>
+                }
+                @foreach (var session in Model)
+                {
+                    var isSelf = session.SessionToken == Context.Request.Cookies["portal_session_token"];
+                    var loginTime = session.CreatedAt.AddHours(8).ToString("dd MMM yyyy, hh:mm:ss tt");
+
+                    var ua = session.UserAgent ?? "";
+                    var browser = ua.Contains("Edg/") ? "Edge" : ua.Contains("Chrome/") ? "Chrome" : ua.Contains("Firefox/") ? "Firefox" : ua.Contains("Safari/") && !ua.Contains("Chrome") ? "Safari" : "Browser";
+                    var os = ua.Contains("iPhone") || ua.Contains("iPad") ? "iOS" : ua.Contains("Android") ? "Android" : ua.Contains("Windows") ? "Windows" : ua.Contains("Macintosh") ? "macOS" : ua.Contains("Linux") ? "Linux" : "Unknown";
+                    var browserOs = string.IsNullOrEmpty(ua) ? "Unknown Browser" : $"{browser} / {os}";
+
+                    var devName = session.Device?.DeviceName ?? "Primary Device";
+                    var devIcon = session.Device?.DeviceType?.ToLower() == "mobile" ? "fa-mobile-alt" : "fa-laptop";
+
+                    <tr class="@(isSelf ? "current-session" : "")" style="@(isSelf ? "background:rgba(var(--accent-rgb),0.04);" : "")">
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <i class="fas @devIcon" style="font-size:1.2rem;color:@(isSelf ? "var(--accent-color)" : "var(--text-muted)");"></i>
+                                <div>
+                                    <span style="font-weight:600;display:block;">@devName @(isSelf ? "(This device)" : "")</span>
+                                    <span style="font-size:0.7rem;color:var(--text-muted);">Logged in at @loginTime</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td><code>@session.IpAddress</code></td>
+                        <td>@browserOs</td>
+                        <td>@loginTime</td>
+                        <td>
+                            @if (isSelf)
+                            {
+                                <span style="font-size:0.75rem;font-weight:700;color:var(--accent-color);text-transform:uppercase;">Current Session</span>
+                            }
+                            else
+                            {
+                                <button class="btn-portal-secondary" style="padding:6px 12px;font-size:0.75rem;color:#ef4444;border-color:rgba(239,68,68,0.2);"
+                                        onclick="terminateOwnSession(this,'@session.AuthSessionId','@devName')">
+                                    <i class="fas fa-xmark"></i> Terminate
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function terminateOwnSession(btn, sessionId, devName) {
+        const fd = new FormData(); fd.append("sessionId", sessionId);
+        fetch("/Portal/ActionTerminateOwnSession", { method:"POST", body:fd })
+            .then(r=>r.json()).then(d=>{
+                if(d.success){
+                    const row = btn.closest("tr");
+                    row.style.opacity="0"; row.style.transform="translateX(40px)"; row.style.transition="all 0.3s";
+                    setTimeout(()=>{ row.remove(); showToast(`Session on "${devName}" terminated.`,"success");
+                        const oc = document.getElementById("other-count");
+                        if(oc) oc.textContent = Math.max(0, parseInt(oc.textContent)-1);
+                    },300);
+                } else { showToast(d.message||"Could not terminate session.","error"); }
+            });
+    }
+
+    function terminateAllOwnOther() {
+        fetch("/Portal/ActionTerminateAllOwnOther", { method:"POST" })
+            .then(r=>r.json()).then(d=>{
+                if(d.success && d.count > 0){
+                    document.querySelectorAll("#my-sessions-table tbody tr:not(.current-session)").forEach(row=>{
+                        row.style.opacity="0"; row.style.transform="translateX(40px)"; row.style.transition="all 0.3s";
+                        setTimeout(()=>row.remove(),300);
+                    });
+                    setTimeout(()=>{ showToast(`Signed out ${d.count} other session(s).`,"warning");
+                        const oc = document.getElementById("other-count"); if(oc) oc.textContent="0";
+                    },350);
+                } else { showToast("No other active sessions to terminate.","info"); }
+            });
+    }
+</script>
+}
+

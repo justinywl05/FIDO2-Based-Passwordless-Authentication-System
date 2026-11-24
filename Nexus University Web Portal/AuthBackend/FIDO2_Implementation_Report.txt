@@ -1,0 +1,61 @@
+=========================================================
+FIDO2 REGISTRATION IMPLEMENTATION & TEST REPORT
+=========================================================
+
+1. IMPLEMENTATION SUMMARY
+---------------------------------------------------------
+The FIDO2 Passkey Registration flow has been fully implemented based on your architecture plan. The backend now supports generating FIDO2 challenges and validating the WebAuthn responses, then securely storing the public key and device metadata.
+
+Key Components Added:
+- AppSettings: Added "fido2" section for ServerDomain (RP ID), ServerName, and Origins. (Removed inline comments to prevent IDE syntax errors).
+- AuditLogService: A service for logging registration actions to the `AuditLogs` table.
+- ViewModels: `RegisterOptionsRequest`, `RegisterVerifyRequest`, and response models added.
+- Fido2Service: Core business logic encapsulating Fido2NetLib for generating options and verifying credentials. It saves challenges to `AuthChallenges`.
+- AuthController: Exposes `POST /api/auth/register/options` and `POST /api/auth/register/verify`.
+- Program.cs: Wired up the FIDO2 configuration, database services, and enabled static file hosting.
+- Frontend Test: Added `wwwroot/test.html` which uses `navigator.credentials.create()` to test the full flow end-to-end.
+
+
+2. ENDPOINTS
+---------------------------------------------------------
+A. POST /api/auth/register/options
+   Payload: { "email": "user@email.com", "deviceName": "My Device", "deviceType": "Web" }
+   Behavior: Checks if user exists, verifies device name isn't a duplicate, generates FIDO2 options, saves challenge to DB, and returns options.
+
+B. POST /api/auth/register/verify
+   Payload: { "email": "user@email.com", "deviceName": "My Device", "deviceType": "Web", "attestationResponse": { ... } }
+   Behavior: Validates the attestation using Fido2Service, verifies the challenge, saves Device and Credential to DB, updates User status, and writes Audit Log.
+
+
+3. TEST PLAN
+---------------------------------------------------------
+You can run the project and navigate to: https://localhost:<port>/test.html
+
+Test Cases to Execute:
+1. Invalid User Test
+   - Action: Enter an email that does not exist in your Users table and click Register.
+   - Expected Result: Request fails with "User not found".
+
+2. Successful Registration Flow
+   - Pre-condition: Ensure a User with email "student@portal.edu" exists in the Users table.
+   - Action: Enter "student@portal.edu" and a device name, then click Register.
+   - Expected Result: 
+     a. Browser will prompt you to create a passkey (Windows Hello, FaceID, TouchID, or Security Key).
+     b. Backend will verify the attestation.
+     c. UI will alert "Success: Passkey registered successfully".
+   - Verification: Check the database tables `Devices`, `Credentials`, `AuthChallenges` (IsUsed should be true), and `AuditLogs` (should have "Register Success").
+
+3. Duplicate Device Registration
+   - Action: Try registering again with the exact same email and device name.
+   - Expected Result: Fails at the /options step with "Device name already exists for this user".
+
+4. Replay Attack / Used Challenge Test
+   - Action: Use a tool like Postman to capture the verification request and send it again.
+   - Expected Result: Fails because the challenge has `IsUsed = true` or is no longer the latest valid challenge.
+
+5. Expired Challenge Test
+   - Action: Modify `ExpiresAt` in the `AuthChallenges` table to a past time for your new challenge, then submit the verify request.
+   - Expected Result: Fails with "Challenge expired or not found".
+
+=========================================================
+END OF REPORT

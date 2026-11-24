@@ -1,0 +1,163 @@
+@{
+    ViewData["Title"] = "Student Enrollment QR";
+    Layout = "~/Views/Shared/_PortalLayout.cshtml";
+}
+
+<div class="page-title-area">
+    <div>
+        <h1 class="page-title"><i class="fas fa-qrcode" style="color: var(--accent-color); margin-right: 8px;"></i> Student Enrollment</h1>
+        <p class="page-subtitle">Physically verify the student, then generate their registration QR code.</p>
+    </div>
+</div>
+
+<div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap: 24px;">
+    <!-- Generate QR Form -->
+    <div class="glass-panel" style="padding: 32px;">
+        <h3 class="card-title" style="margin-bottom: 20px;"><i class="fas fa-clipboard-list"></i> Initiate Registration</h3>
+        
+        <div class="form-group">
+            <label class="form-label" for="studentEmail">Student Email Address</label>
+            <input class="form-input" type="email" id="studentEmail" placeholder="student@portal.edu" value="student@portal.edu" />
+        </div>
+
+        <button class="btn-portal" id="generateBtn" onclick="generateQR()" style="width: 100%; margin-top: 16px;">
+            Generate Registration QR Code
+        </button>
+
+        <div class="log-box" id="log" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 20px; font-family: monospace; font-size: 0.85rem; color: var(--text-muted); max-height: 150px; overflow-y: auto;">
+            Ready. Enter a student email and click Generate.
+        </div>
+    </div>
+
+    <!-- QR Result Display -->
+    <div class="glass-panel" id="resultCard" style="padding: 32px; display: none; text-align: center; border: 1px solid #10b981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);">
+        <h3 style="color: #10b981; font-weight: 700; margin-bottom: 8px;"><i class="fas fa-check-circle"></i> QR Code Generated</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px;">Show this QR code to the student. It expires in <strong>5 minutes</strong>.<br>The student scans it with their phone to register their passkey.</p>
+
+        <div id="qrcode" style="display: flex; justify-content: center; margin: 20px 0;"></div>
+
+        <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 16px; font-family: monospace; font-size: 0.8rem; word-break: break-all; color: var(--text-muted); text-align: left;">
+            URL: <span id="urlDisplay" style="color: var(--accent-color);"></span>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.2); border-radius: 999px; height: 8px; margin: 16px 0 8px; overflow: hidden;">
+            <div id="expiryBar" style="height: 100%; background: #10b981; border-radius: 999px; transition: width 1s linear, background 0.5s; width: 100%;"></div>
+        </div>
+        <div id="expiryText" style="font-size: 0.85rem; color: var(--text-secondary);">Expires in 5:00</div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        let countdownTimer = null;
+
+        function log(msg, type = 'info') {
+            const el = document.getElementById('log');
+            let color = 'var(--text-muted)';
+            if (type === 'ok') color = '#10b981';
+            if (type === 'error') color = '#ef4444';
+            
+            el.innerHTML = `<div style="color: ${color}; margin-bottom: 4px;">${msg}</div>` + el.innerHTML;
+        }
+
+        async function generateQR() {
+            const email = document.getElementById('studentEmail').value.trim();
+            if (!email) { log('Please enter a student email.', 'error'); return; }
+
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+            // Clear previous QR
+            document.getElementById('qrcode').innerHTML = '';
+            document.getElementById('resultCard').style.display = 'none';
+            if (countdownTimer) clearInterval(countdownTimer);
+
+            log(`Calling POST /api/admin/registration/initiate for "${email}"...`);
+
+            try {
+                const res = await fetch('/api/admin/registration/initiate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ studentEmail: email })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok || data.status !== 'ok') {
+                    log(`Error: ${data.errorMessage}`, 'error');
+                    return;
+                }
+
+                log(`Token generated. Expires: ${new Date(data.expiresAt).toLocaleTimeString()}`, 'ok');
+
+                // Adjust URL mapping to point to the MVC Register view
+                let targetUrl = data.registrationUrl;
+                if (targetUrl && targetUrl.includes('/register?')) {
+                    targetUrl = targetUrl.replace('/register?', '/Portal/Register?');
+                } else {
+                    targetUrl = `${window.location.origin}/Portal/Register?token=${data.token || ''}`;
+                }
+
+                document.getElementById('urlDisplay').textContent = targetUrl;
+                document.getElementById('resultCard').style.display = 'block';
+
+                new QRCode(document.getElementById('qrcode'), {
+                    text: targetUrl,
+                    width: 220,
+                    height: 220,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                // Add styling to generated QR to fit dark theme nicely
+                setTimeout(() => {
+                    const qrImg = document.querySelector('#qrcode img');
+                    const qrCanvas = document.querySelector('#qrcode canvas');
+                    const target = qrImg || qrCanvas;
+                    if(target) {
+                        target.style.borderRadius = '12px';
+                        target.style.padding = '12px';
+                        target.style.background = 'white';
+                    }
+                }, 50);
+
+                // Countdown bar
+                const expiresAt = new Date(data.expiresAt).getTime();
+                const totalMs = 5 * 60 * 1000;
+
+                countdownTimer = setInterval(() => {
+                    const remaining = Math.max(0, expiresAt - Date.now());
+                    const pct = (remaining / totalMs) * 100;
+                    const bar = document.getElementById('expiryBar');
+                    bar.style.width = `${pct}%`;
+                    
+                    if (pct > 40) bar.style.background = '#10b981';
+                    else if (pct > 15) bar.style.background = '#f59e0b';
+                    else bar.style.background = '#ef4444';
+
+                    const secs = Math.floor(remaining / 1000);
+                    const m = Math.floor(secs / 60);
+                    const s = (secs % 60).toString().padStart(2, '0');
+                    document.getElementById('expiryText').textContent = remaining > 0
+                        ? `Expires in ${m}:${s}`
+                        : 'Expired — generate a new QR code';
+
+                    if (remaining === 0) {
+                        clearInterval(countdownTimer);
+                        document.getElementById('qrcode').style.opacity = '0.3';
+                    }
+                }, 1000);
+
+            } catch (err) {
+                log(`Network error: ${err.message}. Is the backend running?`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Generate Registration QR Code';
+            }
+        }
+    </script>
+}
+

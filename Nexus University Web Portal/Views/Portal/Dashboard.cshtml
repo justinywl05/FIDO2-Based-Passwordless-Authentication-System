@@ -1,0 +1,475 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_PortalLayout.cshtml";
+}
+
+<!-- Page Title -->
+<div class="page-title-area">
+    <div>
+        <h1 class="page-title">Welcome back, @ViewBag.FullName</h1>
+        <p class="page-subtitle">Here is what's happening with your workspace today.</p>
+    </div>
+    <div style="font-size: 0.875rem; font-weight: 600; color: var(--text-secondary);">
+        <i class="far fa-calendar-alt"></i> <span id="current-date-time">June 9, 2026</span>
+    </div>
+</div>
+
+
+
+@if (ViewBag.RoleId == "student")
+{
+    <!-- STUDENT DASHBOARD -->
+    <!-- Stats Row -->
+    <div class="stat-grid">
+        <div class="stat-card glass-panel">
+            <div class="stat-info">
+                <span class="stat-label">Cumulative GPA</span>
+                <span class="stat-value">3.84</span>
+                <span class="stat-trend up"><i class="fas fa-caret-up"></i> +0.12 this sem</span>
+            </div>
+            <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+        </div>
+        <div class="stat-card glass-panel">
+            <div class="stat-info">
+                <span class="stat-label">Attendance Rate</span>
+                <span class="stat-value">94.2%</span>
+                <span class="stat-trend up"><i class="fas fa-caret-up"></i> Above target</span>
+            </div>
+            <div class="stat-icon" style="color: #10b981; background: rgba(16, 185, 129, 0.12);"><i class="fas fa-user-check"></i></div>
+        </div>
+        <div class="stat-card glass-panel">
+            <div class="stat-info">
+                <span class="stat-label">Completed Credits</span>
+                <span class="stat-value">96 / 120</span>
+                <span class="stat-trend"><i class="fas fa-clock"></i> 80% Completed</span>
+            </div>
+            <div class="stat-icon" style="color: #3b82f6; background: rgba(59, 130, 246, 0.12);"><i class="fas fa-award"></i></div>
+        </div>
+        <div class="stat-card glass-panel">
+            <div class="stat-info">
+                <span class="stat-label">Pending Submissions</span>
+                <span class="stat-value">3 Tasks</span>
+                <span class="stat-trend down"><i class="fas fa-exclamation-circle"></i> 1 due tomorrow</span>
+            </div>
+            <div class="stat-icon" style="color: #ef4444; background: rgba(239, 68, 68, 0.12);"><i class="fas fa-tasks"></i></div>
+        </div>
+    </div>
+
+    <!-- Main Layout Grid -->
+    <div class="dashboard-grid">
+        <!-- Left Side: GPA Trend -->
+        <div class="glass-panel" style="padding: 24px;">
+            <div class="card-header">
+                <h3 class="card-title">GPA Progression</h3>
+                <span style="font-size: 0.75rem; color: var(--text-secondary);">Last 5 Semesters</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="studentGpaChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Right Side: Course Progress Rings & Next Class -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            <!-- Semester Progress -->
+            <div class="glass-panel" style="padding: 24px; position: relative;">
+                <h3 class="card-title" style="margin-bottom: 8px;">Semester Progress</h3>
+                <div class="circular-progress-container">
+                    <svg class="progress-svg" width="120" height="120">
+                        <circle class="progress-bg" cx="60" cy="60" r="50" stroke-width="8" />
+                        <circle class="progress-bar-fill" cx="60" cy="60" r="50" stroke-width="8" stroke-dasharray="314.16" stroke-dashoffset="94.2" />
+                    </svg>
+                    <div class="progress-text">
+                        <span class="progress-value">70%</span>
+                        <span class="progress-label">Week 10 of 14</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next Class count -->
+            <div class="glass-panel" style="padding: 24px; background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), rgba(6, 182, 212, 0.1)); border-color: rgba(var(--accent-rgb), 0.3);">
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--accent-color);">Next Class Starts in 15 mins</span>
+                <h4 style="font-size: 1.125rem; font-weight: 800; margin: 8px 0 4px;">Human Computer Interaction</h4>
+                <p style="font-size: 0.875rem; color: var(--text-secondary);"><i class="fas fa-map-marker-alt"></i> Block D, Lab 402 • Dr. Elizabeth Vance</p>
+            </div>
+
+            <!-- Binded Access Devices -->
+            <div class="glass-panel" style="padding: 24px;">
+                <h3 class="card-title" style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-laptop" style="color: var(--accent-color);"></i> Binded Access Devices
+                </h3>
+                @{
+                    var studentDevices = ViewBag.UserDevices as List<NexusUniversityWebPortal.AuthBackend.Models.Device> ?? new List<NexusUniversityWebPortal.AuthBackend.Models.Device>();
+                }
+                @if (!studentDevices.Any())
+                {
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center; padding: 12px 0;">No devices registered to your account.</p>
+                }
+                else
+                {
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        @foreach (var dev in studentDevices)
+                        {
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="@(dev.DeviceType.ToLower() == "mobile" ? "fas fa-mobile-alt" : dev.DeviceType.ToLower() == "tablet" ? "fas fa-tablet-alt" : "fas fa-laptop")" style="color: var(--accent-color); font-size: 1.1rem;"></i>
+                                    <div>
+                                        <span style="font-size: 0.85rem; font-weight: 600; display: block;">@dev.DeviceName</span>
+                                        <span style="font-size: 0.7rem; color: var(--text-muted);">Registered: @dev.RegisteredAt.ToString("MMM dd, yyyy")</span>
+                                    </div>
+                                </div>
+                                <span class="status-badge @(dev.Status == "Approved" || dev.Status == "Active" ? "status-success" : dev.Status == "Pending Approval" ? "status-warning" : "status-danger")" style="font-size: 0.65rem; padding: 3px 8px;">
+                                    @dev.Status
+                                </span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Course list -->
+    <div class="glass-panel" style="padding: 24px; margin-top: 24px;">
+        <h3 class="card-title" style="margin-bottom: 20px;">Enrolled Courses</h3>
+        <div class="table-responsive">
+            <table class="portal-table">
+                <thead>
+                    <tr>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Lecturer</th>
+                        <th>Attendance</th>
+                        <th>Current Grade</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>HCI302</strong></td>
+                        <td>Human Computer Interaction</td>
+                        <td>Dr. Elizabeth Vance</td>
+                        <td>98%</td>
+                        <td><span style="color: #10b981; font-weight: 700;">A</span></td>
+                        <td><span class="status-badge status-success">Active</span></td>
+                        <td><button class="btn-portal-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="showToast('Loading HCI Course Materials...', 'info')">Materials</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>NET201</strong></td>
+                        <td>Advanced Networking</td>
+                        <td>Prof. Alan Turing</td>
+                        <td>92%</td>
+                        <td><span style="color: var(--accent-color); font-weight: 700;">A-</span></td>
+                        <td><span class="status-badge status-success">Active</span></td>
+                        <td><button class="btn-portal-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="showToast('Loading Networking Course Materials...', 'info')">Materials</button></td>
+                    </tr>
+                    <tr>
+                        <td><strong>DAT102</strong></td>
+                        <td>Database Management Systems</td>
+                        <td>Dr. Grace Hopper</td>
+                        <td>88%</td>
+                        <td><span style="color: #f59e0b; font-weight: 700;">B+</span></td>
+                        <td><span class="status-badge status-warning">Low Attendance</span></td>
+                        <td><button class="btn-portal-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="showToast('Loading Database Course Materials...', 'info')">Materials</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else if (ViewBag.RoleId == "lecturer")
+{
+    <!-- LECTURER DASHBOARD -->
+    <!-- Stats Row -->
+    <div class="stat-grid">
+        <div class="stat-card glass-panel">
+            <div class="stat-info">
+                <span class="stat-label">Active Modules</span>
+                <span class="stat-value">4 Classes</span>
+                <span class="stat-trend"><i class="fas fa-chalkboard"></i> Semester A</span>
+            </div>
+            <div class="stat-icon" style="color: #10b981; background: rgba(16, 185, 129, 0.12);"><i class="fas fa-university"></i></div>
+        </div>
+        <div class="stat-card glass-panel">
+            <div class="stat-info">
+                <span class="stat-label">Assigned Students</span>
+                <span class="stat-value">142 Pupils</span>
+                <span class="stat-trend up"><i class="fas fa-users"></i> Full enrollment</span>
+            </div>
+            <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+        </div>
+        <div class="stat-card glass-panel">
+            <div class="stat-info">
+                <span class="stat-label">Avg Attendance</span>
+                <span class="stat-value">91.6%</span>
+                <span class="stat-trend up"><i class="fas fa-caret-up"></i> +1.2% vs last sem</span>
+            </div>
+            <div class="stat-icon" style="color: #3b82f6; background: rgba(59, 130, 246, 0.12);"><i class="fas fa-check-double"></i></div>
+        </div>
+        <div class="stat-card glass-panel">
+            <div class="stat-info">
+                <span class="stat-label">Unmarked Tasks</span>
+                <span class="stat-value">12 Submissions</span>
+                <span class="stat-trend down"><i class="fas fa-clock"></i> 2 days remaining</span>
+            </div>
+            <div class="stat-icon" style="color: #ef4444; background: rgba(239, 68, 68, 0.12);"><i class="fas fa-file-signature"></i></div>
+        </div>
+    </div>
+
+    <!-- Main Layout Grid -->
+    <div class="dashboard-grid">
+        <!-- Left Side: Student Performance -->
+        <div class="glass-panel" style="padding: 24px;">
+            <div class="card-header">
+                <h3 class="card-title">Grade Distribution (HCI302)</h3>
+                <span style="font-size: 0.75rem; color: var(--text-secondary);">Current Term</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="lecturerGradeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Right Side: Quick Grade Submission & Attendance Marker -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            <!-- Quick Attendance Check -->
+            <div class="glass-panel" style="padding: 24px;">
+                <h3 class="card-title" style="margin-bottom: 16px;">Quick Attendance (HCI302)</h3>
+                <div class="item-list" style="margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; padding: 4px 0;">
+                        <span>Alex Mercer</span>
+                        <input type="checkbox" checked onclick="showToast('Updated Alex Mercer attendance', 'success')" style="accent-color: var(--accent-color);" />
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; padding: 4px 0;">
+                        <span>Gordon Freeman</span>
+                        <input type="checkbox" checked onclick="showToast('Updated Gordon Freeman attendance', 'success')" style="accent-color: var(--accent-color);" />
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; padding: 4px 0;">
+                        <span>Chell Aperture</span>
+                        <input type="checkbox" onclick="showToast('Marked Chell Aperture absent', 'warning')" style="accent-color: var(--accent-color);" />
+                    </div>
+                </div>
+                <button class="btn-portal" style="width: 100%; padding: 10px;" onclick="showToast('Attendance list submitted!', 'success')">Submit Attendance</button>
+            </div>
+
+            <!-- Grade Upload -->
+            <div class="glass-panel" style="padding: 24px;">
+                <h3 class="card-title" style="margin-bottom: 16px;">Grade Quick Submission</h3>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <select class="form-select" style="padding: 8px 12px; font-size: 0.85rem;">
+                        <option>HCI302 - Human Computer Interaction</option>
+                        <option>NET201 - Advanced Networking</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                    <input class="form-input" placeholder="Student ID" style="padding: 8px 12px; font-size: 0.85rem;" />
+                    <input class="form-input" placeholder="Marks" type="number" style="padding: 8px 12px; font-size: 0.85rem; width: 80px;" />
+                </div>
+                <button class="btn-portal-secondary" style="width: 100%; padding: 10px;" onclick="showToast('Marks posted successfully!', 'success')">Post Grade</button>
+            </div>
+
+            <!-- Binded Access Devices -->
+            <div class="glass-panel" style="padding: 24px;">
+                <h3 class="card-title" style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-laptop" style="color: var(--accent-color);"></i> Binded Access Devices
+                </h3>
+                @{
+                    var lecturerDevices = ViewBag.UserDevices as List<NexusUniversityWebPortal.AuthBackend.Models.Device> ?? new List<NexusUniversityWebPortal.AuthBackend.Models.Device>();
+                }
+                @if (!lecturerDevices.Any())
+                {
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center; padding: 12px 0;">No devices registered to your account.</p>
+                }
+                else
+                {
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        @foreach (var dev in lecturerDevices)
+                        {
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="@(dev.DeviceType.ToLower() == "mobile" ? "fas fa-mobile-alt" : dev.DeviceType.ToLower() == "tablet" ? "fas fa-tablet-alt" : "fas fa-laptop")" style="color: var(--accent-color); font-size: 1.1rem;"></i>
+                                    <div>
+                                        <span style="font-size: 0.85rem; font-weight: 600; display: block;">@dev.DeviceName</span>
+                                        <span style="font-size: 0.7rem; color: var(--text-muted);">Registered: @dev.RegisteredAt.ToString("MMM dd, yyyy")</span>
+                                    </div>
+                                </div>
+                                <span class="status-badge @(dev.Status == "Approved" || dev.Status == "Active" ? "status-success" : dev.Status == "Pending Approval" ? "status-warning" : "status-danger")" style="font-size: 0.65rem; padding: 3px 8px;">
+                                    @dev.Status
+                                </span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+else if (ViewBag.RoleId == "admin")
+{
+    <!-- ADMIN DASHBOARD -->
+    <!-- Stats Row -->
+    <div class="stat-grid">
+        <div class="stat-card glass-panel">
+            <div class="stat-info">
+                <span class="stat-label">Active Web Sessions</span>
+                <span class="stat-value">1,482</span>
+                <span class="stat-trend up"><i class="fas fa-arrow-trend-up"></i> Peak load period</span>
+            </div>
+            <div class="stat-icon" style="color: #f59e0b; background: rgba(245, 158, 11, 0.12);"><i class="fas fa-signal"></i></div>
+        </div>
+        <div class="stat-card glass-panel">
+            <div class="stat-info">
+                <span class="stat-label">Registered Devices</span>
+                <span class="stat-value">3,109</span>
+                <span class="stat-trend"><i class="fas fa-desktop"></i> BYOD Approved</span>
+            </div>
+            <div class="stat-icon"><i class="fas fa-laptop-code"></i></div>
+        </div>
+        <div class="stat-card glass-panel">
+            <div class="stat-info">
+                <span class="stat-label">Authentication Status</span>
+                <span class="stat-value">99.89%</span>
+                <span class="stat-trend up"><i class="fas fa-shield-alt"></i> No active flags</span>
+            </div>
+            <div class="stat-icon" style="color: #10b981; background: rgba(16, 185, 129, 0.12);"><i class="fas fa-lock"></i></div>
+        </div>
+        <div class="stat-card glass-panel">
+            <div class="stat-info">
+                <span class="stat-label">Database Status</span>
+                <span class="stat-value">Healthy</span>
+                <span class="stat-trend"><i class="fas fa-server"></i> Ping: 4ms</span>
+            </div>
+            <div class="stat-icon" style="color: #3b82f6; background: rgba(59, 130, 246, 0.12);"><i class="fas fa-database"></i></div>
+        </div>
+    </div>
+
+    <!-- Admin Shortcuts Grid -->
+    <div class="glass-panel" style="padding: 32px; margin-bottom: 24px; background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.05), rgba(6, 182, 212, 0.05));">
+        <h3 class="card-title" style="text-align: center;">Administrative Control Modules</h3>
+        <p style="text-align: center; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 24px;">Manage connections, audit accesses, register devices, and provision accounts.</p>
+        <div class="admin-nav-grid">
+            <a href="/Portal/AdminDevices" class="admin-nav-card glass-panel">
+                <i class="fas fa-laptop-medical"></i>
+                <span>Device Management</span>
+            </a>
+            <a href="/Portal/AdminSessions" class="admin-nav-card glass-panel">
+                <i class="fas fa-users-cog"></i>
+                <span>Session Management</span>
+            </a>
+            <a href="/Portal/AdminLogs" class="admin-nav-card glass-panel">
+                <i class="fas fa-shield-halved"></i>
+                <span>Authentication Logs</span>
+            </a>
+            <a href="/Portal/AdminUserCreation" class="admin-nav-card glass-panel">
+                <i class="fas fa-user-plus"></i>
+                <span>Create Portal User</span>
+            </a>
+        </div>
+    </div>
+
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Set current date
+            const dateSpan = document.getElementById("current-date-time");
+            if (dateSpan) {
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                dateSpan.textContent = new Date().toLocaleDateString("en-US", options);
+            }
+
+            // Get colors based on accent
+            const computedStyle = getComputedStyle(document.documentElement);
+            const accentColor = computedStyle.getPropertyValue('--accent-color').trim() || "#8b5cf6";
+            
+            // 1. Initialise Charts based on User Role
+            @if (ViewBag.RoleId == "student")
+            {
+                <text>
+                const ctx = document.getElementById('studentGpaChart').getContext('2d');
+                
+                // Gradient for area fill
+                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, accentColor.replace("rgb", "rgba").replace(")", ", 0.35)"));
+                gradient.addColorStop(1, accentColor.replace("rgb", "rgba").replace(")", ", 0.0)"));
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Sem 1, Y1', 'Sem 2, Y1', 'Sem 1, Y2', 'Sem 2, Y2', 'Sem 1, Y3'],
+                        datasets: [{
+                            label: 'GPA',
+                            data: [3.45, 3.60, 3.52, 3.71, 3.84],
+                            borderColor: accentColor,
+                            borderWidth: 3,
+                            fill: true,
+                            backgroundColor: gradient,
+                            tension: 0.4,
+                            pointBackgroundColor: accentColor,
+                            pointHoverRadius: 7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                min: 3.0,
+                                max: 4.0,
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: { color: '#9ca3af' }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#9ca3af' }
+                            }
+                        }
+                    }
+                });
+                </text>
+            }
+            else if (ViewBag.RoleId == "lecturer")
+            {
+                <text>
+                const ctx = document.getElementById('lecturerGradeChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'F'],
+                        datasets: [{
+                            label: 'Number of Students',
+                            data: [15, 22, 35, 18, 12, 8, 4, 1],
+                            backgroundColor: accentColor,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: { color: '#9ca3af' }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#9ca3af' }
+                            }
+                        }
+                    }
+                });
+                </text>
+            }
+
+        });
+
+
+    </script>
+}
+

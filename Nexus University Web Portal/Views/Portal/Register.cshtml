@@ -1,0 +1,557 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Your Passkey</title>
+    <style>
+        @@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface2: #22263a;
+            --border: #2e3347;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --error: #f43f5e;
+            --error-glow: rgba(244, 63, 94, 0.2);
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        /* Subtle animated gradient background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 60% 40%, rgba(99,102,241,0.08) 0%, transparent 60%),
+                        radial-gradient(ellipse at 30% 70%, rgba(16,185,129,0.06) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        /* ---- States ---- */
+        .state { display: none; }
+        .state.active { display: block; }
+
+        /* ---- Loading state ---- */
+        .loading-wrap {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @@keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ---- Card ---- */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+        }
+
+        .card-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 1.25rem;
+            box-shadow: 0 8px 24px var(--accent-glow);
+        }
+
+        .card h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #e2e8f0 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .card .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 1.75rem;
+            line-height: 1.5;
+        }
+
+        .user-info-box {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .user-email {
+            font-size: 0.85rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .user-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        input {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.8rem 1rem;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.9rem 1.5rem;
+            background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s, opacity 0.2s;
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .btn:hover { box-shadow: 0 8px 32px var(--accent-glow); transform: translateY(-1px); }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .step-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+        }
+
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* ---- Success state ---- */
+        .success-card {
+            background: var(--surface);
+            border: 1px solid var(--success);
+            box-shadow: 0 0 40px var(--success-glow);
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+
+        .success-icon {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 8px 32px var(--success-glow);
+        }
+
+        .success-card h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--success);
+            margin-bottom: 0.75rem;
+        }
+
+        .success-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* ---- Error state ---- */
+        .error-card {
+            background: var(--surface);
+            border: 1px solid var(--error);
+            box-shadow: 0 0 30px var(--error-glow);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .error-card h2 { color: var(--error); margin-bottom: 0.75rem; }
+        .error-card p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
+
+        .retry-btn {
+            margin-top: 1.25rem;
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: 1px solid var(--error);
+            color: var(--error);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .retry-btn:hover { background: var(--error-glow); }
+
+        .log-line {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 1rem;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Loading state -->
+    <div class="state active" id="stateLoading">
+        <div class="loading-wrap">
+            <div class="spinner"></div>
+            <p style="color: var(--text-muted); font-size: 0.9rem;" id="loadingText">Validating your registration link...</p>
+        </div>
+    </div>
+
+    <!-- Registration form state -->
+    <div class="state" id="stateForm">
+        <div class="card">
+            <div class="card-icon">🔑</div>
+            <h1>Register Your Passkey</h1>
+            <p class="subtitle">Your administrator has verified your identity. Complete the setup below to activate your account using your device's biometrics.</p>
+
+            <!-- Student info (populated by JS) -->
+            <div class="user-info-box">
+                <div class="user-avatar">👤</div>
+                <div>
+                    <div class="user-email" id="userEmailDisplay">Loading...</div>
+                    <div class="user-label">Registered student account</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Device Name</label>
+                <input type="text" id="deviceName" placeholder="e.g. Justin's iPhone" value="My Phone">
+            </div>
+
+            <div class="step-label">
+                <div class="step-dot"></div>
+                Ready to use your biometrics
+            </div>
+
+            <button class="btn" id="registerBtn" onclick="startRegistration()">
+                Register with Biometrics
+            </button>
+
+            <p class="log-line" id="statusLine">Tap the button, then complete the biometric prompt.</p>
+        </div>
+    </div>
+
+    <!-- Success state -->
+    <div class="state" id="stateSuccess">
+        <div class="success-card">
+            <div class="success-icon">✅</div>
+            <h2>Passkey Registered!</h2>
+            <p>Your passkey has been saved to this device. Your account is now <strong style="color: var(--success);">Active</strong>.<br><br>You can now use this device to authenticate without a password.</p>
+        </div>
+    </div>
+
+    <!-- Error state -->
+    <div class="state" id="stateError">
+        <div class="error-card">
+            <h2>❌ Registration Failed</h2>
+            <p id="errorMessage">An unexpected error occurred.</p>
+            <button class="retry-btn" onclick="location.reload()">Try Again</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const TOKEN = params.get('token');
+    const IS_SELF = params.get('mode') === 'self'; // true = adding extra device, false = initial enrollment
+    let fido2Options = null;
+
+    function showState(id) {
+        document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function setStatus(msg) {
+        document.getElementById('statusLine').textContent = msg;
+    }
+
+    function showError(msg) {
+        document.getElementById('errorMessage').textContent = msg;
+        showState('stateError');
+    }
+
+    // ---------- Base64url helpers ----------
+    function coerceToArrayBuffer(thing) {
+        if (typeof thing === 'string') {
+            thing = thing.replace(/-/g, '+').replace(/_/g, '/');
+            const str = window.atob(thing);
+            const bytes = new Uint8Array(str.length);
+            for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
+            return bytes.buffer;
+        }
+        if (thing instanceof Uint8Array) return thing.buffer;
+        return thing;
+    }
+
+    function coerceToBase64Url(thing) {
+        if (thing instanceof ArrayBuffer) thing = new Uint8Array(thing);
+        if (thing instanceof Uint8Array) {
+            let str = '';
+            for (let i = 0; i < thing.byteLength; i++) str += String.fromCharCode(thing[i]);
+            thing = window.btoa(str);
+        }
+        return thing.replace(/\+/g, '-').replace(/\//g, '_').replace(/=*$/g, '');
+    }
+
+    // ---------- Step 1: Fetch FIDO2 options using the QR token ----------
+    async function fetchOptions() {
+        if (!TOKEN) {
+            showError('No registration token found in the URL. Please scan the QR code again.');
+            return;
+        }
+
+        try {
+            document.getElementById('loadingText').textContent = 'Validating your registration link...';
+            showState('stateLoading');
+
+            const res = await fetch(`/api/auth/register/options-by-token?token=${encodeURIComponent(TOKEN)}`);
+            const data = await res.json();
+
+            if (!res.ok || data.status !== 'ok') {
+                showError(data.errorMessage || 'Failed to validate registration token.');
+                return;
+            }
+
+            fido2Options = data.options;
+
+            // Show the user's email from the FIDO2 user info
+            const email = fido2Options.user?.name || 'Unknown';
+            document.getElementById('userEmailDisplay').textContent = email;
+
+            // Update label for self-registration
+            if (IS_SELF) {
+                document.querySelector('.subtitle').textContent = 'Scan this QR from your other device. Complete the biometric setup below to link it to your account.';
+                document.querySelector('.user-label').textContent = 'Account — adding new device';
+            }
+
+            showState('stateForm');
+
+        } catch (err) {
+            showError(`Could not reach the server: ${err.message}. Make sure you are connected to the same network.`);
+        }
+    }
+
+    // ---------- Step 2: Run navigator.credentials.create() ----------
+    async function startRegistration() {
+        if (!fido2Options) { showError('No FIDO2 options loaded. Please refresh the page.'); return; }
+
+        const deviceName = document.getElementById('deviceName').value.trim();
+        if (!deviceName) { setStatus('Please enter a device name.'); return; }
+
+        const btn = document.getElementById('registerBtn');
+        btn.disabled = true;
+        btn.textContent = 'Waiting for biometric...';
+        setStatus('Follow the biometric prompt on your device...');
+
+        try {
+            // Decode base64url fields to ArrayBuffers for the WebAuthn API
+            const publicKey = fido2Options;
+            publicKey.challenge = coerceToArrayBuffer(publicKey.challenge);
+            publicKey.user.id = coerceToArrayBuffer(publicKey.user.id);
+            if (publicKey.excludeCredentials) {
+                publicKey.excludeCredentials.forEach(c => { c.id = coerceToArrayBuffer(c.id); });
+            }
+
+            const newCredential = await navigator.credentials.create({ publicKey });
+
+            setStatus('Biometric confirmed. Sending to server...');
+            btn.textContent = 'Saving passkey...';
+
+            // Encode ArrayBuffers back to base64url strings for the backend
+            const attestationResponse = {
+                id: newCredential.id,
+                rawId: coerceToBase64Url(newCredential.rawId),
+                type: newCredential.type,
+                response: {
+                    attestationObject: coerceToBase64Url(newCredential.response.attestationObject),
+                    clientDataJSON: coerceToBase64Url(newCredential.response.clientDataJSON)
+                }
+            };
+
+            // ---------- Step 3: Verify with backend ----------
+            const verifyEndpoint = IS_SELF
+                ? '/api/auth/register/verify-self-device'
+                : '/api/auth/register/verify-initial';
+
+            const verifyRes = await fetch(verifyEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    token: TOKEN,
+                    deviceName: deviceName,
+                    deviceType: detectDeviceClass(),
+                    attestationResponse: attestationResponse
+                })
+            });
+
+            const verifyData = await verifyRes.json();
+
+            if (verifyData.success) {
+                // Update success text for self-registration
+                if (IS_SELF) {
+                    document.querySelector('.success-card p').innerHTML =
+                        'Your new device has been linked to your account.<br><br>You can now log in from this device using your biometrics.';
+                }
+                showState('stateSuccess');
+            } else {
+                showError(verifyData.message || 'Verification failed. Please try again.');
+            }
+
+        } catch (err) {
+            // 🚨 THIS IS THE NEW DEBUG ALERT 🚨
+            alert("Biometric Crash:\nMessage: " + err.message + "\nName: " + err.name);
+
+            if (err.name === 'NotAllowedError') {
+                setStatus('Biometric was cancelled or timed out. Please try again.');
+            } else {
+                showError(`Error: ${err.message}`);
+            }
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Register with Biometrics';
+        }
+    }
+
+    function detectDeviceClass() {
+        const ua = navigator.userAgent;
+        const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+        const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        
+        // Check for mobile user agents
+        const isMobileUA = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        // Check if it's a tablet User-Agent or iPadOS pretending to be MacOS
+        const isTabletUA = /Tablet|iPad|PlayBook|Silk/i.test(ua) || 
+                           (ua.includes("Macintosh") && hasTouch && navigator.maxTouchPoints > 1);
+        
+        if (isTabletUA) {
+            return "Tablet";
+        } else if (isMobileUA) {
+            return "Mobile";
+        } else if (hasTouch && width < 1024) {
+            return width < 768 ? "Mobile" : "Tablet";
+        }
+        return "Laptop";
+    }
+
+    // On page load, immediately validate the token
+    fetchOptions();
+</script>
+</body>
+</html>
+

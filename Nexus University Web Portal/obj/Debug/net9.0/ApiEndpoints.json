@@ -1,0 +1,140 @@
+[
+  {
+    "ContainingType": "NexusUniversityWebPortal.AuthBackend.Controllers.AdminController",
+    "Method": "InitiateRegistration",
+    "RelativePath": "api/admin/registration/initiate",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "NexusUniversityWebPortal.AuthBackend.ViewModels.InitiateRegistrationRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "NexusUniversityWebPortal.AuthBackend.Controllers.LoginController",
+    "Method": "GenerateOptions",
+    "RelativePath": "api/auth/login/options",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "NexusUniversityWebPortal.AuthBackend.ViewModels.LoginOptionsRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "NexusUniversityWebPortal.AuthBackend.Controllers.LoginController",
+    "Method": "GenerateCdaOptions",
+    "RelativePath": "api/auth/login/options-cda",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "NexusUniversityWebPortal.AuthBackend.ViewModels.LoginOptionsRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "NexusUniversityWebPortal.AuthBackend.Controllers.LoginController",
+    "Method": "ReportFailure",
+    "RelativePath": "api/auth/login/report-failure",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "NexusUniversityWebPortal.AuthBackend.ViewModels.LoginFailureRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "NexusUniversityWebPortal.AuthBackend.Controllers.LoginController",
+    "Method": "VerifyResponse",
+    "RelativePath": "api/auth/login/verify",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "NexusUniversityWebPortal.AuthBackend.ViewModels.LoginVerifyRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "NexusUniversityWebPortal.AuthBackend.Controllers.AuthController",
+    "Method": "InitiateSelfDeviceRegistration",
+    "RelativePath": "api/auth/register/initiate-self",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "NexusUniversityWebPortal.AuthBackend.Controllers.AuthController",
+    "Method": "GetOptionsByToken",
+    "RelativePath": "api/auth/register/options-by-token",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "token",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "NexusUniversityWebPortal.AuthBackend.Controllers.AuthController",
+    "Method": "VerifyInitialRegistration",
+    "RelativePath": "api/auth/register/verify-initial",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "NexusUniversityWebPortal.AuthBackend.ViewModels.InitialVerifyRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "NexusUniversityWebPortal.AuthBackend.Controllers.AuthController",
+    "Method": "VerifySelfDevice",
+    "RelativePath": "api/auth/register/verify-self-device",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "NexusUniversityWebPortal.AuthBackend.ViewModels.InitialVerifyRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

@@ -1,0 +1,356 @@
+@model IEnumerable<NexusUniversityWebPortal.AuthBackend.Models.AuditLog>
+
+@{
+    ViewData["Title"] = "Authentication Log";
+    Layout = "~/Views/Shared/_PortalLayout.cshtml";
+
+    var totalAttempts = Model.Count(l => l.Action.Contains("Login"));
+    var successCount  = Model.Count(l => l.Action.Contains("Success"));
+    var failedCount   = Model.Count(l => l.Action.Contains("Failed"));
+    var otherCount    = Model.Count() - totalAttempts;
+}
+
+<div class="page-title-area">
+    <div>
+        <h1 class="page-title">
+            <a href="/Portal/SecurityDashboard" style="color: var(--text-muted); font-size: 0.8em; margin-right: 6px; text-decoration: none;">
+                <i class="fas fa-shield-halved"></i>
+            </a>
+            <i class="fas fa-terminal" style="color: var(--accent-color); margin-right: 8px;"></i> Authentication Log
+        </h1>
+        <p class="page-subtitle">Real-time audit stream — every login attempt, FIDO2 event, and security exception.</p>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+        <label for="live-feed-chk" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="live-feed-chk" checked style="accent-color: var(--accent-color); width: 16px; height: 16px;" />
+            Live Feed
+        </label>
+        <button class="btn-portal-secondary" style="padding: 8px 16px;" onclick="clearLogs()">
+            <i class="fas fa-trash-can"></i> Clear Database
+        </button>
+    </div>
+</div>
+
+<!-- KPI Strip -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="glass-panel" style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
+        <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(99,102,241,0.12); display: flex; align-items: center; justify-content: center; flex-shrink:0;">
+            <i class="fas fa-list-check" style="color: #6366f1; font-size: 1.1rem;"></i>
+        </div>
+        <div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);" id="kpi-total">@Model.Count()</div>
+            <div style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Events</div>
+        </div>
+    </div>
+    <div class="glass-panel" style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
+        <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(16,185,129,0.12); display: flex; align-items: center; justify-content: center; flex-shrink:0;">
+            <i class="fas fa-circle-check" style="color: #10b981; font-size: 1.1rem;"></i>
+        </div>
+        <div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #10b981;" id="kpi-success">@successCount</div>
+            <div style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Successful Logins</div>
+        </div>
+    </div>
+    <div class="glass-panel" style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
+        <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(239,68,68,0.12); display: flex; align-items: center; justify-content: center; flex-shrink:0;">
+            <i class="fas fa-circle-xmark" style="color: #ef4444; font-size: 1.1rem;"></i>
+        </div>
+        <div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #ef4444;" id="kpi-failed">@failedCount</div>
+            <div style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Failed Attempts</div>
+        </div>
+    </div>
+    <div class="glass-panel" style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
+        <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(245,158,11,0.12); display: flex; align-items: center; justify-content: center; flex-shrink:0;">
+            <i class="fas fa-triangle-exclamation" style="color: #f59e0b; font-size: 1.1rem;"></i>
+        </div>
+        <div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #f59e0b;" id="kpi-other">@otherCount</div>
+            <div style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">System Events</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter & Search Bar -->
+<div class="glass-panel" style="padding: 14px 20px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <button class="filter-pill active-pill" id="filter-all"     onclick="filterLogs('all')">All Events</button>
+        <button class="filter-pill success-pill" id="filter-success" onclick="filterLogs('success')">
+            <i class="fas fa-circle-check"></i> Login Success
+        </button>
+        <button class="filter-pill danger-pill"  id="filter-danger"  onclick="filterLogs('danger')">
+            <i class="fas fa-circle-xmark"></i> Login Failed
+        </button>
+        <button class="filter-pill warning-pill" id="filter-warning" onclick="filterLogs('warning')">
+            <i class="fas fa-triangle-exclamation"></i> System Events
+        </button>
+        <button class="filter-pill info-pill" id="filter-logout" onclick="filterLogs('logout')">
+            <i class="fas fa-sign-out-alt"></i> Log Out
+        </button>
+        <button class="filter-pill purple-pill" id="filter-registration" onclick="filterLogs('registration')">
+            <i class="fas fa-user-plus"></i> Initiated Registration
+        </button>
+    </div>
+    <div style="position: relative; max-width: 280px; width: 100%;">
+        <input class="form-input" id="log-search" placeholder="Search IP, email, action..." style="padding: 8px 12px 8px 36px; font-size: 0.85rem;" oninput="searchLogs()" />
+        <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.8rem;"></i>
+    </div>
+</div>
+
+<!-- Log Table Container -->
+<div class="glass-panel" style="padding: 0; overflow: hidden;">
+    <!-- Table Header -->
+    <div class="log-table-header">
+        <span style="flex: 0 0 90px;">Time</span>
+        <span style="flex: 0 0 80px; text-align: center;">Result</span>
+        <span style="flex: 1;">Event / Action</span>
+        <span style="flex: 1.4;">Details</span>
+        <span style="flex: 0 0 130px;">User / IP</span>
+    </div>
+
+    <div id="log-console" style="max-height: 560px; overflow-y: auto;">
+        @foreach (var log in Model)
+        {
+            var isLogout = log.Action.Contains("Logout", StringComparison.OrdinalIgnoreCase) || log.Action.Contains("Log out", StringComparison.OrdinalIgnoreCase);
+            var isRegistration = log.Action.Contains("Initiated Registration", StringComparison.OrdinalIgnoreCase);
+            var isSuccess = log.Action.Contains("Success", StringComparison.OrdinalIgnoreCase);
+            var isFailure = log.Action.Contains("Failed", StringComparison.OrdinalIgnoreCase) || log.Action.Contains("Revoke", StringComparison.OrdinalIgnoreCase) || log.Action.Contains("Terminate", StringComparison.OrdinalIgnoreCase) || log.Action.Contains("Denied", StringComparison.OrdinalIgnoreCase) || log.Action.Contains("Attack", StringComparison.OrdinalIgnoreCase);
+            var isLogin   = log.Action.Contains("Login", StringComparison.OrdinalIgnoreCase);
+
+            var logClass   = isLogout ? "logout" : isRegistration ? "registration" : isSuccess ? "success" : isFailure ? "danger" : "warning";
+            var badgeLabel = isLogout ? "Log Out" : isRegistration ? "Registration" : isLogin && isSuccess ? "Login Success" : isLogin && isFailure ? "Login Failed" : isSuccess ? "Success" : isFailure ? "Failed" : "System";
+            var badgeIcon  = isLogout ? "fa-sign-out-alt" : isRegistration ? "fa-user-plus" : isSuccess ? "fa-circle-check" : isFailure ? "fa-circle-xmark" : "fa-circle-info";
+
+            <div class="log-row @logClass" data-level="@logClass">
+                @{ var localTime = log.CreatedAt.AddHours(8); }
+                <span class="log-time">@localTime.ToString("HH:mm:ss")<br/><span style="font-size: 0.65rem; color: var(--text-muted);">@localTime.ToString("dd MMM")</span></span>
+                <span class="log-badge-cell">
+                    <span class="log-result-badge @logClass">
+                        <i class="fas @badgeIcon"></i>
+                        @badgeLabel
+                    </span>
+                </span>
+                <span class="log-action">@log.Action</span>
+                <span class="log-details">@log.Details</span>
+                <span class="log-meta">
+                    @{ 
+                        var displayName = !string.IsNullOrEmpty(log.UserEmail) ? log.UserEmail : (log.UserId?.ToString() ?? "System");
+                        var isGuid = Guid.TryParse(displayName, out _);
+                        var displayStr = isGuid ? displayName.Substring(0, Math.Min(8, displayName.Length)) + "…" : displayName;
+                    }
+                    <span style="display:block; font-size: 0.78rem; color: var(--text-secondary); font-weight: 500;" title="@displayName">@displayStr</span>
+                    <span style="display:block; font-size: 0.72rem; color: var(--text-muted);">@(log.IpAddress ?? "—")</span>
+                </span>
+            </div>
+        }
+    </div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block; animation: pulse-dot 1.5s infinite;"></span>
+            Live feed active · polling every 5s
+        </span>
+        <span id="log-count-label" style="font-size: 0.78rem; color: var(--text-muted);">Showing @Model.Count() events</span>
+    </div>
+</div>
+
+@section Scripts {
+<style>
+    .filter-pill {
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--border-color);
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+    .filter-pill:hover { border-color: var(--accent-color); color: var(--text-primary); }
+    .filter-pill.active-pill  { background: rgba(var(--accent-rgb), 0.1); border-color: var(--accent-color); color: var(--accent-color); }
+    .filter-pill.success-pill.active-pill { background: rgba(16,185,129,0.1); border-color: #10b981; color: #10b981; }
+    .filter-pill.danger-pill.active-pill  { background: rgba(239,68,68,0.1);  border-color: #ef4444; color: #ef4444; }
+    .filter-pill.warning-pill.active-pill { background: rgba(245,158,11,0.1); border-color: #f59e0b; color: #f59e0b; }
+    .filter-pill.info-pill.active-pill    { background: rgba(59,130,246,0.1); border-color: #3b82f6; color: #3b82f6; }
+    .filter-pill.purple-pill.active-pill  { background: rgba(139,92,246,0.1); border-color: #8b5cf6; color: #8b5cf6; }
+
+    .log-table-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--text-muted);
+        background: rgba(0,0,0,0.1);
+    }
+
+    .log-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border-color);
+        border-left: 3px solid transparent;
+        transition: background 0.15s ease;
+        font-size: 0.82rem;
+    }
+    .log-row:hover { background: rgba(255,255,255,0.025); }
+    .log-row.success { border-left-color: #10b981; background: rgba(16,185,129,0.02); }
+    .log-row.danger  { border-left-color: #ef4444; background: rgba(239,68,68,0.02); }
+    .log-row.warning { border-left-color: #f59e0b; background: rgba(245,158,11,0.02); }
+    .log-row.logout  { border-left-color: #3b82f6; background: rgba(59,130,246,0.02); }
+    .log-row.registration { border-left-color: #8b5cf6; background: rgba(139,92,246,0.02); }
+
+    .log-time  { flex: 0 0 90px; font-family: monospace; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
+    .log-badge-cell { flex: 0 0 80px; display: flex; align-items: flex-start; padding-top: 2px; }
+    .log-action { flex: 1; color: var(--text-secondary); font-weight: 600; font-size: 0.8rem; line-height: 1.5; }
+    .log-details { flex: 1.4; color: var(--text-muted); font-size: 0.78rem; line-height: 1.5; }
+    .log-meta { flex: 0 0 130px; }
+
+    .log-result-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .log-result-badge.success { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+    .log-result-badge.danger  { background: rgba(239,68,68,0.15);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .log-result-badge.warning { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+    .log-result-badge.logout  { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
+    .log-result-badge.registration { background: rgba(139,92,246,0.15); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.3); }
+
+    @@keyframes pulse-dot {
+        0%   { transform: scale(0.9); opacity: 0.5; }
+        50%  { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(0.9); opacity: 0.5; }
+    }
+</style>
+<script>
+    let selectedFilter = 'all';
+
+    function getLevel(action) {
+        const a = action.toLowerCase();
+        if (a.includes('logout') || a.includes('log out')) return 'logout';
+        if (a.includes('initiated registration')) return 'registration';
+        if (a.includes('success') || a.includes('verify') || a.includes('provisioned') || a.includes('registered')) return 'success';
+        if (a.includes('failed') || a.includes('revoke') || a.includes('terminate') || a.includes('denied') || a.includes('attack') || a.includes('expired') || a.includes('deleted')) return 'danger';
+        return 'warning';
+    }
+
+    function getBadgeLabel(action) {
+        const a = action.toLowerCase();
+        const isLogin = a.includes('login');
+        if (a.includes('logout') || a.includes('log out')) return { label: 'Log Out', icon: 'fa-sign-out-alt' };
+        if (a.includes('initiated registration')) return { label: 'Registration', icon: 'fa-user-plus' };
+        if (isLogin && a.includes('success')) return { label: 'Login Success', icon: 'fa-circle-check' };
+        if (isLogin && (a.includes('failed') || a.includes('fail'))) return { label: 'Login Failed', icon: 'fa-circle-xmark' };
+        if (a.includes('success')) return { label: 'Success', icon: 'fa-circle-check' };
+        if (a.includes('failed') || a.includes('revoke') || a.includes('attack')) return { label: 'Failed', icon: 'fa-circle-xmark' };
+        return { label: 'System', icon: 'fa-circle-info' };
+    }
+
+    function filterLogs(level) {
+        selectedFilter = level;
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active-pill'));
+        const map = { all: 'filter-all', success: 'filter-success', danger: 'filter-danger', warning: 'filter-warning', logout: 'filter-logout', registration: 'filter-registration' };
+        document.getElementById(map[level])?.classList.add('active-pill');
+        applyFilterAndSearch();
+    }
+
+    function searchLogs() { applyFilterAndSearch(); }
+
+    function applyFilterAndSearch() {
+        const query = document.getElementById('log-search').value.toLowerCase();
+        let visible = 0;
+        document.querySelectorAll('.log-row').forEach(row => {
+            const level = row.getAttribute('data-level');
+            const text  = row.textContent.toLowerCase();
+            const show  = (selectedFilter === 'all' || level === selectedFilter) && text.includes(query);
+            row.style.display = show ? 'flex' : 'none';
+            if (show) visible++;
+        });
+        document.getElementById('log-count-label').textContent = `Showing ${visible} events`;
+    }
+
+    function clearLogs() {
+        if (!confirm('Are you sure you want to clear all audit logs from the database? This cannot be undone.')) return;
+        fetch('/Portal/ActionClearLogs', { method: 'POST' })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    document.getElementById('log-console').innerHTML = '';
+                    lastPollTime = new Date().toISOString();
+                    ['kpi-total','kpi-success','kpi-failed','kpi-other'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = '0';
+                    });
+                    document.getElementById('log-count-label').textContent = 'Showing 0 events';
+                    showToast('All database logs cleared successfully!', 'success');
+                }
+            });
+    }
+
+    let lastPollTime = new Date().toISOString();
+
+    function buildRow(log) {
+        const level = getLevel(log.action);
+        const badge = getBadgeLabel(log.action);
+        const uIdStr = log.userId || 'System';
+        const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/i.test(uIdStr) || /^[0-9a-f]{32}$/i.test(uIdStr) || uIdStr === '00000000-0000-0000-0000-000000000000';
+        const displayId = isGuid ? uIdStr.substring(0, 8) + '…' : uIdStr;
+        
+        const dateStr = new Date(log.isoTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        return `
+        <div class="log-row ${level}" data-level="${level}">
+            <span class="log-time">${log.time}<br/><span style="font-size:0.65rem;color:var(--text-muted)">${dateStr}</span></span>
+            <span class="log-badge-cell">
+                <span class="log-result-badge ${level}">
+                    <i class="fas ${badge.icon}"></i>${badge.label}
+                </span>
+            </span>
+            <span class="log-action">${log.action}</span>
+            <span class="log-details">${log.details}</span>
+            <span class="log-meta">
+                <span style="display:block;font-size:0.78rem;color:var(--text-secondary);font-weight:500" title="${uIdStr}">${displayId}</span>
+                <span style="display:block;font-size:0.72rem;color:var(--text-muted)">${log.ip || '—'}</span>
+            </span>
+        </div>`;
+    }
+
+    function pollLogs() {
+        if (!document.getElementById('live-feed-chk').checked) return;
+        fetch(`/Portal/GetNewLogs?since=${encodeURIComponent(lastPollTime)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success || !data.logs.length) return;
+                const console = document.getElementById('log-console');
+                lastPollTime = data.logs.reduce((max, l) => l.isoTime > max ? l.isoTime : max, lastPollTime);
+                data.logs.forEach(log => {
+                    const level = getLevel(log.action);
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = buildRow(log);
+                    const node = tmp.firstElementChild;
+                    console.insertBefore(node, console.firstChild);
+                    if (level === 'danger') showToast(`⚠ ${log.action}: ${log.details}`, 'error');
+                });
+                while (console.children.length > 100) console.lastChild.remove();
+                applyFilterAndSearch();
+            })
+            .catch(() => {});
+    }
+
+    setInterval(pollLogs, 5000);
+</script>
+}

@@ -1,0 +1,164 @@
+@model IEnumerable<NexusUniversityWebPortal.AuthBackend.Models.User>
+
+@{
+    ViewData["Title"] = "Access Control List (RBAC)";
+    Layout = "~/Views/Shared/_PortalLayout.cshtml";
+    var roles = ViewBag.RolesList as List<NexusUniversityWebPortal.Controllers.PortalController.Role> ?? new List<NexusUniversityWebPortal.Controllers.PortalController.Role>();
+}
+
+<div class="page-title-area">
+    <div>
+        <h1 class="page-title"><i class="fas fa-user-shield" style="color: var(--accent-color); margin-right: 8px;"></i> IAM & RBAC Access Matrix</h1>
+        <p class="page-subtitle">Configure security permissions mapped to roles and adjust system administrative authorizations.</p>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- User Roles Assignment -->
+    <div class="glass-panel" style="padding: 24px;">
+        <h3 class="card-title" style="margin-bottom: 16px;">User Role Assignments</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">Provision or revoke system roles for registered users.</p>
+        
+        <div class="table-responsive">
+            <table class="portal-table">
+                <thead>
+                    <tr>
+                        <th>User Name</th>
+                        <th>User ID</th>
+                        <th>Current Role</th>
+                        <th>Update Role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td><strong>@user.FullName</strong></td>
+                            <td><code>@user.StudentStaffId</code></td>
+                            <td><span class="demo-badge @user.RoleId" id="badge-user-@user.UserId">@user.RoleId</span></td>
+                            <td>
+                                @if (user.StudentStaffId == "ADMIN-01")
+                                {
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); font-size: 0.78rem; color: var(--text-muted); font-weight: 500; cursor: not-allowed;">
+                                            <i class="fas fa-lock" style="font-size: 0.7rem;"></i> Protected
+                                        </span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <select class="form-select" id="select-user-@user.UserId" style="padding: 6px 32px 6px 12px; font-size: 0.8rem; border-radius: 8px; width: 130px;">
+                                            @foreach (var r in roles)
+                                            {
+                                                <!option value="@r.RoleId" @(user.RoleId == r.RoleId ? "selected" : "")>@r.RoleName</!option>
+                                            }
+                                        </select>
+                                        <button class="btn-portal" style="padding: 6px 12px; font-size: 0.75rem;" onclick="updateUserRole('@user.UserId')">Apply</button>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- System Default Permissions Matrix (Read-Only) -->
+    <div class="glass-panel" style="padding: 24px;">
+        <h3 class="card-title" style="margin-bottom: 16px;">System Default Permissions</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">Review the static access permissions pre-configured for each user role in the system. These policies are enforced at the backend level.</p>
+        
+        <!-- Tabs for Roles -->
+        <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 20px;">
+            @foreach (var r in roles)
+            {
+                <button class="profile-tab @(r.RoleId == "admin" ? "active" : "")" data-role-tab="@r.RoleId" style="border: none; background: none; font-size: 0.9rem;">
+                    @r.RoleName
+                </button>
+            }
+        </div>
+
+        <!-- Static permissions display for each role -->
+        @foreach (var r in roles)
+        {
+            <div class="role-permission-panel" id="panel-@r.RoleId" style="display: @(r.RoleId == "admin" ? "block" : "none");">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div>
+                        <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;">Role Description</span>
+                        <p style="font-size: 0.9rem; color: var(--text-primary); margin-top: 4px;">@r.Description</p>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px; display: block; margin-bottom: 12px;">Authorized Access Claims</span>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            @foreach (var perm in r.Permissions)
+                            {
+                                <span class="status-badge status-success" style="font-size: 0.75rem; padding: 6px 12px; font-family: monospace;">@perm</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Tab switcher logic for Roles permissions
+            const tabs = document.querySelectorAll("[data-role-tab]");
+            const panels = document.querySelectorAll(".role-permission-panel");
+
+            tabs.forEach(tab => {
+                tab.addEventListener("click", () => {
+                    tabs.forEach(t => t.classList.remove("active"));
+                    panels.forEach(p => p.style.display = "none");
+
+                    tab.classList.add("active");
+                    const role = tab.getAttribute("data-role-tab");
+                    const targetPanel = document.getElementById(`panel-${role}`);
+                    if (targetPanel) {
+                        targetPanel.style.display = "block";
+                    }
+                });
+            });
+        });
+
+        function updateUserRole(userId) {
+            const newRole = document.getElementById("select-user-" + userId).value;
+            
+            const formData = new FormData();
+            formData.append("userId", userId);
+            formData.append("newRoleId", newRole);
+
+            fetch("/Portal/ActionUpdateUserRole", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast("User role reassigned successfully!", "success");
+                    
+                    // Update badge style and content
+                    const badge = document.getElementById(`badge-user-${userId}`);
+                    if (badge) {
+                        badge.textContent = newRole;
+                        badge.className = `demo-badge ${newRole}`;
+                    }
+                } else {
+                    if (data.message === "session_expired") {
+                        showToast("Session expired, logging out...", "error");
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        showToast("Failed to assign role: " + data.message, "error");
+                    }
+                }
+            })
+            .catch(err => console.error(err));
+        }
+    </script>
+}
+

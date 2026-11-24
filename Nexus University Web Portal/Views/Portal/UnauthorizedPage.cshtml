@@ -1,0 +1,51 @@
+@{
+    ViewData["Title"] = "Access Denied (403)";
+    Layout = "~/Views/Shared/_PortalLayout.cshtml";
+}
+
+<div style="min-height: 65vh; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif;">
+    <div class="glass-panel" style="max-width: 550px; width: 100%; text-align: center; padding: 48px 32px; box-shadow: 0 15px 35px rgba(239, 68, 68, 0.1);">
+        <!-- Glowing Red Lock -->
+        <div style="display: inline-flex; align-items: center; justify-content: center; width: 80px; height: 80px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-size: 2.5rem; margin-bottom: 24px; border: 2px solid rgba(239, 68, 68, 0.25); animation: pulse-red 2s infinite;">
+            <i class="fas fa-lock"></i>
+        </div>
+        
+        <h1 style="font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 12px; color: #ef4444;">
+            403 - Access Denied
+        </h1>
+        
+        <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px;">
+            Your current digital identity does not possess the authorization permissions required to access this system resource. 
+        </p>
+
+        <!-- Permission details -->
+        <div style="background: rgba(0,0,0,0.15); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 32px; font-family: monospace; font-size: 0.85rem; text-align: left;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--text-muted);">Required Privilege:</span>
+                <code style="color: #ef4444; font-weight: 700;">@ViewBag.RequiredPermission</code>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">Your Assigned Role:</span>
+                <span class="demo-badge @ViewBag.RoleId" style="padding: 2px 8px; font-size: 0.65rem;">@ViewBag.RoleId</span>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <a href="/Portal/Dashboard" class="btn-portal" style="padding: 10px 24px; font-size: 0.9rem;">
+                <i class="fas fa-home"></i> Back to Dashboard
+            </a>
+            <button class="btn-portal-secondary" style="padding: 10px 24px; font-size: 0.9rem;" onclick="showToast('Contact administrator Sarah Connor to request this role assignment', 'info')">
+                Request Access
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@keyframes pulse-red {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+</style>
+

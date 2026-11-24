@@ -1,0 +1,263 @@
+@{
+    ViewData["Title"] = "Security Dashboard";
+    Layout = "~/Views/Shared/_PortalLayout.cshtml";
+}
+
+<style>
+    .sec-hub-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 28px;
+        margin-top: 8px;
+    }
+
+    .sec-hub-card {
+        position: relative;
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 40px 36px 36px;
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+        overflow: hidden;
+        transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+
+        .sec-hub-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+            border-color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        .sec-hub-card .card-glow {
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            opacity: 0.07;
+            transition: opacity 0.3s ease;
+        }
+
+        .sec-hub-card:hover .card-glow {
+            opacity: 0.14;
+        }
+
+        .sec-hub-card .card-icon-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sec-hub-card h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sec-hub-card p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sec-hub-card .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+            .sec-hub-card .feature-list li {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 0.85rem;
+                color: var(--text-secondary);
+            }
+
+                .sec-hub-card .feature-list li i {
+                    width: 20px;
+                    text-align: center;
+                    font-size: 0.8rem;
+                }
+
+    .hub-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        z-index: 1;
+    }
+
+        .hub-cta:hover {
+            transform: translateX(4px);
+        }
+
+    .card-log .card-glow {
+        background: #3b82f6;
+    }
+
+    .card-log .card-icon-wrap {
+        background: rgba(59,130,246,0.12);
+        color: #3b82f6;
+    }
+
+    .card-log .feature-list li i {
+        color: #3b82f6;
+    }
+
+    .card-log .hub-cta {
+        background: rgba(59,130,246,0.12);
+        color: #3b82f6;
+    }
+
+        .card-log .hub-cta:hover {
+            background: rgba(59,130,246,0.2);
+        }
+
+    .card-analytics .card-glow {
+        background: var(--accent-color);
+    }
+
+    .card-analytics .card-icon-wrap {
+        background: var(--accent-light);
+        color: var(--accent-color);
+    }
+
+    .card-analytics .feature-list li i {
+        color: var(--accent-color);
+    }
+
+    .card-analytics .hub-cta {
+        background: var(--accent-light);
+        color: var(--accent-color);
+    }
+
+        .card-analytics .hub-cta:hover {
+            background: rgba(var(--accent-rgb), 0.2);
+        }
+
+    .sec-banner {
+        background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08), rgba(59,130,246,0.06));
+        border: 1px solid rgba(var(--accent-rgb), 0.18);
+        border-radius: 16px;
+        padding: 20px 28px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+        .sec-banner i {
+            font-size: 1.4rem;
+            color: var(--accent-color);
+            flex-shrink: 0;
+        }
+
+        .sec-banner p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .sec-banner strong {
+            color: var(--text-primary);
+        }
+
+    @@keyframes float-in {
+        from {
+            opacity: 0;
+            transform: translateY(24px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .sec-hub-card:nth-child(1) {
+        animation: float-in 0.4s ease both;
+    }
+
+    .sec-hub-card:nth-child(2) {
+        animation: float-in 0.4s 0.1s ease both;
+    }
+</style>
+
+<div class="page-title-area">
+    <div>
+        <h1 class="page-title"><i class="fas fa-shield-halved" style="color: var(--accent-color); margin-right: 8px;"></i> Security Dashboard</h1>
+        <p class="page-subtitle">Monitor authentication events, system activity, and security analytics.</p>
+    </div>
+</div>
+
+<div class="sec-banner">
+    <i class="fas fa-circle-info"></i>
+    <p><strong>Security Dashboard</strong> — Select a module below. The <em>Auth Log</em> provides a real-time view of all authentication events. <em>Security Analytics</em> offers aggregated metrics, charts, and threat intelligence to help you monitor system health (OWASP, 2020; 2023).</p>
+</div>
+
+<div class="sec-hub-grid">
+    <a href="/Portal/AdminLogs" class="sec-hub-card card-log">
+        <div class="card-glow"></div>
+        <div class="card-icon-wrap">
+            <i class="fas fa-terminal"></i>
+        </div>
+        <h2>Authentication Log</h2>
+        <p>Real-time audit stream of every login attempt, FIDO2 challenge, session event, and security exception across the system.</p>
+        <ul class="feature-list">
+            <li><i class="fas fa-check-circle"></i> Live polling – new events appear automatically</li>
+            <li><i class="fas fa-check-circle"></i> Login attempt detection (success / failed badges)</li>
+            <li><i class="fas fa-check-circle"></i> Filter by status: All · Success · Warning · Failure</li>
+            <li><i class="fas fa-check-circle"></i> IP address and user identity per event</li>
+            <li><i class="fas fa-check-circle"></i> Full text search across log entries</li>
+        </ul>
+        <span class="hub-cta">Open Auth Log <i class="fas fa-arrow-right"></i></span>
+    </a>
+
+    <a href="/Portal/SecurityAnalytics" class="sec-hub-card card-analytics">
+        <div class="card-glow"></div>
+        <div class="card-icon-wrap">
+            <i class="fas fa-lock"></i>
+        </div>
+        <h2>Security Analytics</h2>
+        <p>Visual reporting dashboard with KPI metrics, login trend charts, device distribution analytics, and top user activity — updated on each visit.</p>
+        <ul class="feature-list">
+            <li><i class="fas fa-check-circle"></i> Total logins, failures, active sessions & security score</li>
+            <li><i class="fas fa-check-circle"></i> Hourly login trend chart (today)</li>
+            <li><i class="fas fa-check-circle"></i> Weekly successful vs failed authentication bar chart</li>
+            <li><i class="fas fa-check-circle"></i> Registered device type distribution (pie chart)</li>
+            <li><i class="fas fa-check-circle"></i> Top 5 most active users leaderboard</li>
+        </ul>
+        <span class="hub-cta">Open Analytics <i class="fas fa-arrow-right"></i></span>
+    </a>
+</div>

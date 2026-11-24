@@ -1,0 +1,16 @@
+wwwroot\css\portal.css
+wwwroot\css\site.css
+wwwroot\favicon.ico
+wwwroot\js\portal.js
+wwwroot\js\site.js
+wwwroot\lib\jquery-validation\LICENSE.md
+wwwroot\lib\jquery\LICENSE.txt
+wwwroot\test.html
+C:\Users\user\Desktop\Nexus University Web Portal\wwwroot\test.html
+C:\Users\user\Desktop\Nexus University Web Portal\wwwroot\lib\jquery\LICENSE.txt
+C:\Users\user\Desktop\Nexus University Web Portal\wwwroot\lib\jquery-validation\LICENSE.md
+C:\Users\user\Desktop\Nexus University Web Portal\wwwroot\js\site.js
+C:\Users\user\Desktop\Nexus University Web Portal\wwwroot\js\portal.js
+C:\Users\user\Desktop\Nexus University Web Portal\wwwroot\favicon.ico
+C:\Users\user\Desktop\Nexus University Web Portal\wwwroot\css\site.css
+C:\Users\user\Desktop\Nexus University Web Portal\wwwroot\css\portal.css

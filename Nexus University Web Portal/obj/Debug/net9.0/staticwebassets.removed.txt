@@ -1,0 +1,8 @@
+C:\Users\user\Desktop\FYP_COMBINEDQR_LATEST_FINAL\wwwroot\test.html
+C:\Users\user\Desktop\FYP_COMBINEDQR_LATEST_FINAL\wwwroot\lib\jquery\LICENSE.txt
+C:\Users\user\Desktop\FYP_COMBINEDQR_LATEST_FINAL\wwwroot\lib\jquery-validation\LICENSE.md
+C:\Users\user\Desktop\FYP_COMBINEDQR_LATEST_FINAL\wwwroot\js\site.js
+C:\Users\user\Desktop\FYP_COMBINEDQR_LATEST_FINAL\wwwroot\js\portal.js
+C:\Users\user\Desktop\FYP_COMBINEDQR_LATEST_FINAL\wwwroot\favicon.ico
+C:\Users\user\Desktop\FYP_COMBINEDQR_LATEST_FINAL\wwwroot\css\site.css
+C:\Users\user\Desktop\FYP_COMBINEDQR_LATEST_FINAL\wwwroot\css\portal.css

@@ -1,0 +1,496 @@
+@{
+    ViewData["Title"] = "Security Analytics";
+    Layout = "~/Views/Shared/_PortalLayout.cshtml";
+
+    int totalLogins    = ViewBag.TotalLogins    ?? 0;
+    int successLogins  = ViewBag.SuccessLogins  ?? 0;
+    int failedLogins   = ViewBag.FailedLogins   ?? 0;
+    int activeSessions = ViewBag.ActiveSessions ?? 0;
+    int securityScore  = ViewBag.SecurityScore  ?? 100;
+    int totalDevices   = ViewBag.TotalDevices   ?? 0;
+
+    string scoreStatus = securityScore >= 95 ? "Excellent" : securityScore >= 80 ? "Good" : "At Risk";
+    string scoreColor  = securityScore >= 95 ? "#10b981"  : securityScore >= 80 ? "#f59e0b" : "#ef4444";
+}
+
+<div class="page-title-area">
+    <div>
+        <h1 class="page-title">
+            <a href="/Portal/SecurityDashboard" style="color: var(--text-muted); font-size: 0.8em; margin-right: 6px; text-decoration: none;">
+                <i class="fas fa-shield-halved"></i>
+            </a>
+            <i class="fas fa-chart-mixed" style="color: var(--accent-color); margin-right: 8px;"></i> Security Analytics
+        </h1>
+        <p class="page-subtitle">Real-time monitoring, threat detection, and authentication reporting.</p>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <span id="last-refresh-label" style="font-size: 0.78rem; color: var(--text-muted);"><i class="fas fa-rotate" style="margin-right: 4px;"></i>Loading…</span>
+        <button class="btn-portal-secondary" style="padding: 8px 18px; font-size: 0.85rem;" onclick="loadCharts()">
+            <i class="fas fa-arrows-rotate"></i> Refresh
+        </button>
+    </div>
+</div>
+
+<!-- ========== KPI CARDS ========== -->
+<div class="kpi-grid" style="margin-bottom: 28px;">
+
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(99,102,241,0.12); color: #6366f1;">
+            <i class="fas fa-right-to-bracket"></i>
+        </div>
+        <div class="kpi-body">
+            <div class="kpi-label">Total Login Attempts</div>
+            <div class="kpi-value">@totalLogins</div>
+            <div class="kpi-sub" style="color: #10b981;">
+                <i class="fas fa-check"></i> @successLogins success · <i class="fas fa-xmark" style="margin-left:4px;"></i> @failedLogins failed
+            </div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(239,68,68,0.12); color: #ef4444;">
+            <i class="fas fa-triangle-exclamation"></i>
+        </div>
+        <div class="kpi-body">
+            <div class="kpi-label">Failed Attempts</div>
+            <div class="kpi-value" style="color: #ef4444;">@failedLogins</div>
+            <div class="kpi-sub" style="color: var(--text-muted);">
+                @(totalLogins > 0 ? $"{Math.Round((double)failedLogins / totalLogins * 100, 1)}% failure rate" : "No attempts recorded")
+            </div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(16,185,129,0.12); color: #10b981;">
+            <i class="fas fa-wave-square"></i>
+        </div>
+        <div class="kpi-body">
+            <div class="kpi-label">Active Sessions</div>
+            <div class="kpi-value" style="color: #10b981;">@activeSessions</div>
+            <div class="kpi-sub" style="color: var(--text-muted);">@totalDevices registered devices</div>
+        </div>
+    </div>
+
+    <div class="kpi-card" style="position: relative;">
+        <div class="kpi-icon-wrap" style="background: rgba(16,185,129,0.1); color: @scoreColor;">
+            <i class="fas fa-shield-check"></i>
+        </div>
+        <div class="kpi-body">
+            <div class="kpi-label">Security Score</div>
+            <div class="kpi-value" style="color: @scoreColor;">@securityScore<span style="font-size: 1rem;">%</span></div>
+            <div class="kpi-sub" style="color: @scoreColor; font-weight: 600;">@scoreStatus status</div>
+        </div>
+        <div class="score-ring-wrap">
+            <svg viewBox="0 0 36 36" class="score-ring">
+                <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="ring-fill" stroke="@scoreColor"
+                      stroke-dasharray="@securityScore, 100"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+        </div>
+    </div>
+
+</div>
+
+<!-- ========== ROW 1: Line chart + Bar chart ========== -->
+<div class="chart-row" style="margin-bottom: 28px;">
+    <div class="glass-panel chart-panel">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">Login Activity Trends</div>
+                <div class="chart-sub">24-hour login patterns — today</div>
+            </div>
+            <div class="chart-legend">
+                <span class="legend-dot" style="background: #10b981;"></span> Successful
+                <span class="legend-dot" style="background: #ef4444; margin-left: 10px;"></span> Failed
+            </div>
+        </div>
+        <canvas id="hourlyChart" style="max-height: 240px;"></canvas>
+    </div>
+
+    <div class="glass-panel chart-panel">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">Weekly Authentication Summary</div>
+                <div class="chart-sub">Successful vs failed attempts (last 7 days)</div>
+            </div>
+            <div class="chart-legend">
+                <span class="legend-dot" style="background: #1db89a;"></span> Success
+                <span class="legend-dot" style="background: #ef4444; margin-left: 10px;"></span> Failed
+            </div>
+        </div>
+        <canvas id="weeklyChart" style="max-height: 240px;"></canvas>
+    </div>
+</div>
+
+<!-- ========== ROW 2: Replay / threat stats ========== -->
+<div class="glass-panel" style="padding: 24px; margin-bottom: 28px;">
+    <div class="chart-header" style="margin-bottom: 20px;">
+        <div>
+            <div class="chart-title"><i class="fas fa-repeat" style="color: #f59e0b; margin-right: 6px;"></i>Replay Attack Statistics</div>
+            <div class="chart-sub">Real-time threat detection metrics</div>
+        </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+        <div class="threat-stat-card orange">
+            <i class="fas fa-bolt"></i>
+            <div class="ts-value" id="ts-detected">—</div>
+            <div class="ts-label">Detected Attempts</div>
+            <div class="ts-sub">All-time replay attacks</div>
+        </div>
+        <div class="threat-stat-card green">
+            <i class="fas fa-shield"></i>
+            <div class="ts-value" id="ts-blocked">—</div>
+            <div class="ts-label">Blocked Attacks</div>
+            <div class="ts-sub ts-rate" id="ts-rate">—% success rate</div>
+        </div>
+        <div class="threat-stat-card red">
+            <i class="fas fa-circle-exclamation"></i>
+            <div class="ts-value" id="ts-failblocks">—</div>
+            <div class="ts-label">Failed Auth Blocks</div>
+            <div class="ts-sub">Under threshold</div>
+        </div>
+        <div class="threat-stat-card blue">
+            <i class="fas fa-clock"></i>
+            <div class="ts-value">@activeSessions</div>
+            <div class="ts-label">Live Sessions</div>
+            <div class="ts-sub">Currently active</div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== ROW 3: Pie chart + Top users ========== -->
+<div class="chart-row">
+    <div class="glass-panel chart-panel">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">Device Distribution</div>
+                <div class="chart-sub">Registered authenticators by type</div>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+            <div style="flex: 0 0 200px; max-width: 200px;">
+                <canvas id="deviceChart"></canvas>
+            </div>
+            <div id="device-legend" style="flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 140px;"></div>
+        </div>
+    </div>
+
+    <div class="glass-panel chart-panel">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">Top Active Users</div>
+                <div class="chart-sub">Most frequent authentication activity</div>
+            </div>
+        </div>
+        <div id="top-users-list" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="text-align: center; padding: 32px; color: var(--text-muted); font-size: 0.85rem;">
+                <i class="fas fa-spinner fa-spin" style="margin-right: 6px;"></i> Loading user data…
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<style>
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+    }
+    .kpi-card {
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 22px;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        animation: kpi-in 0.4s ease both;
+    }
+    .kpi-card:nth-child(2) { animation-delay: 0.06s; }
+    .kpi-card:nth-child(3) { animation-delay: 0.12s; }
+    .kpi-card:nth-child(4) { animation-delay: 0.18s; }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    @@keyframes kpi-in {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .kpi-icon-wrap {
+        width: 52px; height: 52px;
+        border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+    .kpi-body { flex: 1; }
+    .kpi-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 4px; }
+    .kpi-value { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; margin-bottom: 4px; }
+    .kpi-sub   { font-size: 0.75rem; color: var(--text-secondary); }
+
+    .score-ring-wrap { position: absolute; right: 16px; top: 16px; width: 52px; height: 52px; opacity: 0.4; }
+    .score-ring { width: 100%; height: 100%; }
+    .ring-bg   { fill: none; stroke: var(--border-color); stroke-width: 3; }
+    .ring-fill { fill: none; stroke-width: 3; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+
+    .chart-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    @@media (max-width: 900px) { .chart-row { grid-template-columns: 1fr; } }
+
+    .chart-panel { padding: 24px; }
+    .chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .chart-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+    .chart-sub   { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+    .chart-legend { display: flex; align-items: center; font-size: 0.75rem; color: var(--text-secondary); }
+    .legend-dot  { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+    .threat-stat-card {
+        padding: 20px;
+        border-radius: 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    .threat-stat-card > i { font-size: 1.2rem; margin-bottom: 4px; }
+    .threat-stat-card.orange { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.2); }
+    .threat-stat-card.orange > i { color: #f59e0b; }
+    .threat-stat-card.green  { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); }
+    .threat-stat-card.green  > i { color: #10b981; }
+    .threat-stat-card.red    { background: rgba(239,68,68,0.06);  border: 1px solid rgba(239,68,68,0.2); }
+    .threat-stat-card.red    > i { color: #ef4444; }
+    .threat-stat-card.blue   { background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); }
+    .threat-stat-card.blue   > i { color: #3b82f6; }
+    .ts-value { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+    .ts-label { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
+    .ts-sub   { font-size: 0.72rem; color: var(--text-muted); }
+
+    .user-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .user-row:last-child { border-bottom: none; }
+    .user-avatar {
+        width: 38px; height: 38px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; font-weight: 700;
+        flex-shrink: 0;
+        color: #fff;
+    }
+    .user-name  { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+    .user-email { font-size: 0.75rem; color: var(--text-muted); }
+    .user-count { margin-left: auto; text-align: right; }
+    .user-count-val { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); }
+    .user-count-sub { font-size: 0.7rem; color: var(--text-muted); }
+
+    .dev-legend-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+    }
+    .dev-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+</style>
+
+<script>
+    Chart.defaults.color = 'rgba(148,163,184,0.8)';
+    Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+    Chart.defaults.font.size = 11;
+
+    const PALETTE = ['#1db89a', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4'];
+    const AVATAR_COLORS = ['#1db89a','#3b82f6','#8b5cf6','#f59e0b','#ef4444'];
+
+    let hourlyChartInst, weeklyChartInst, deviceChartInst;
+
+    function formatTimeAgo(isoStr) {
+        const diff = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+        if (diff < 60)  return diff + 's ago';
+        if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+        return Math.floor(diff/86400) + 'd ago';
+    }
+
+    function initials(name) {
+        const parts = name.split(' ').filter(p => p);
+        return (parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '');
+    }
+
+    function loadCharts() {
+        document.getElementById('last-refresh-label').innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:4px;"></i>Refreshing…';
+
+        fetch('/Portal/GetSecurityStats')
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) return;
+
+                // --- Hourly line chart ---
+                const hourLabels = Array.from({length: 24}, (_, i) => `${String(i).padStart(2,'0')}:00`);
+                if (hourlyChartInst) hourlyChartInst.destroy();
+                hourlyChartInst = new Chart(document.getElementById('hourlyChart'), {
+                    type: 'line',
+                    data: {
+                        labels: hourLabels,
+                        datasets: [
+                            {
+                                label: 'Successful Logins',
+                                data: data.hourlySuccess,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16,185,129,0.08)',
+                                pointBackgroundColor: '#10b981',
+                                pointRadius: 3,
+                                tension: 0.4,
+                                fill: true
+                            },
+                            {
+                                label: 'Failed Attempts',
+                                data: data.hourlyFailed,
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239,68,68,0.06)',
+                                pointBackgroundColor: '#ef4444',
+                                pointRadius: 3,
+                                tension: 0.4,
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { maxTicksLimit: 8 } },
+                            y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true, ticks: { stepSize: 1 } }
+                        }
+                    }
+                });
+
+                // --- Weekly bar chart ---
+                if (weeklyChartInst) weeklyChartInst.destroy();
+                weeklyChartInst = new Chart(document.getElementById('weeklyChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.dailyLabels,
+                        datasets: [
+                            {
+                                label: 'Successful',
+                                data: data.dailySuccess,
+                                backgroundColor: 'rgba(29,184,154,0.7)',
+                                borderRadius: 6,
+                                barPercentage: 0.55
+                            },
+                            {
+                                label: 'Failed',
+                                data: data.dailyFailed,
+                                backgroundColor: 'rgba(239,68,68,0.65)',
+                                borderRadius: 6,
+                                barPercentage: 0.55
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+                        scales: {
+                            x: { grid: { display: false } },
+                            y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true, ticks: { stepSize: 1 } }
+                        }
+                    }
+                });
+
+                // --- Device Pie chart ---
+                const devLabels = data.deviceGroups.map(g => g.type);
+                const devCounts = data.deviceGroups.map(g => g.count);
+                const devTotal  = devCounts.reduce((a,b) => a+b, 0) || 1;
+
+                if (deviceChartInst) deviceChartInst.destroy();
+                deviceChartInst = new Chart(document.getElementById('deviceChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: devLabels,
+                        datasets: [{
+                            data: devCounts,
+                            backgroundColor: PALETTE,
+                            borderColor: 'var(--panel-bg)',
+                            borderWidth: 3,
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        cutout: '62%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => ` ${ctx.label}: ${ctx.parsed} (${Math.round(ctx.parsed/devTotal*100)}%)`
+                                }
+                            }
+                        }
+                    }
+                });
+
+                const legendHtml = devLabels.map((l,i) => `
+                    <div class="dev-legend-row">
+                        <span class="dev-legend-dot" style="background:${PALETTE[i]}"></span>
+                        <span style="flex:1">${l}</span>
+                        <span style="font-weight:700;color:var(--text-primary)">${devCounts[i]}</span>
+                        <span style="color:var(--text-muted)">${Math.round(devCounts[i]/devTotal*100)}%</span>
+                    </div>`).join('');
+                document.getElementById('device-legend').innerHTML = legendHtml || '<span style="color:var(--text-muted);font-size:0.8rem;">No devices registered yet.</span>';
+
+                // --- Top users ---
+                if (data.topUsers && data.topUsers.length > 0) {
+                    const rows = data.topUsers.map((u, i) => `
+                        <div class="user-row">
+                            <div class="user-avatar" style="background:${AVATAR_COLORS[i % AVATAR_COLORS.length]}">
+                                ${initials(u.name)}
+                            </div>
+                            <div style="flex:1;min-width:0">
+                                <div class="user-name">${u.name}</div>
+                                <div class="user-email">${u.email}</div>
+                            </div>
+                            <div class="user-count">
+                                <div class="user-count-val">${u.count}</div>
+                                <div class="user-count-sub">${formatTimeAgo(u.lastSeen)}</div>
+                            </div>
+                        </div>`).join('');
+                    document.getElementById('top-users-list').innerHTML = rows;
+                } else {
+                    document.getElementById('top-users-list').innerHTML = `
+                        <div style="text-align:center;padding:32px;color:var(--text-muted);font-size:0.85rem;">
+                            <i class="fas fa-users-slash" style="font-size:2rem;margin-bottom:10px;display:block;opacity:0.3;"></i>
+                            No user login data available yet.
+                        </div>`;
+                }
+
+                // --- Threat stats ---
+                document.getElementById('ts-detected').textContent  = data.replayAttempts;
+                document.getElementById('ts-blocked').textContent   = data.blockedAttacks;
+                document.getElementById('ts-failblocks').textContent = data.failedBlocks;
+                const rate = data.replayAttempts > 0
+                    ? Math.round(data.blockedAttacks / data.replayAttempts * 100) : 100;
+                document.getElementById('ts-rate').textContent = rate + '% success rate';
+
+                const now = new Date();
+                document.getElementById('last-refresh-label').innerHTML =
+                    `<i class="fas fa-circle-check" style="color:#10b981;margin-right:4px;"></i>Updated ${now.toLocaleTimeString()}`;
+            })
+            .catch(() => {
+                document.getElementById('last-refresh-label').innerHTML =
+                    '<i class="fas fa-triangle-exclamation" style="color:#ef4444;margin-right:4px;"></i>Failed to load';
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadCharts);
+</script>
+}

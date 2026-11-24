@@ -1,0 +1,32 @@
+@{
+    ViewData["Title"] = "Nexus Student Portal";
+}
+
+<div style="min-height: 70vh; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif;">
+    <div style="max-width: 600px; width: 100%; text-align: center; padding: 40px; border-radius: 24px; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: fadeIn 0.8s ease;">
+        <div style="display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 20px; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; font-size: 2.5rem; margin-bottom: 24px; border: 1.5px solid rgba(139, 92, 246, 0.25);">
+            <i class="fas fa-graduation-cap"></i>
+        </div>
+        
+        <h1 style="font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 12px; background: linear-gradient(135deg, #a78bfa, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            NEXUS PORTAL
+        </h1>
+        
+        <p style="color: #94a3b8; font-size: 1.05rem; line-height: 1.6; margin-bottom: 32px;">
+            A next-generation, high-performance portal system for students, lecturers, and system administrators. Access classes, compile logs, register hardware, and manage active sessions.
+        </p>
+
+        <a href="/Portal/Login" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: #7c3aed; color: white; padding: 14px 28px; border-radius: 12px; font-weight: 600; text-decoration: none; box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4); transition: all 0.2s ease;" onmouseover="this.style.background='#6d28d9'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#7c3aed'; this.style.transform='translateY(0)';">
+            Enter Portal <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+</div>
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+

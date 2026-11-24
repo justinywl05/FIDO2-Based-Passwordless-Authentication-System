@@ -1,0 +1,499 @@
+@model IEnumerable<NexusUniversityWebPortal.AuthBackend.Models.User>
+
+@{
+    ViewData["Title"] = "Create User";
+    Layout = "~/Views/Shared/_PortalLayout.cshtml";
+}
+
+<div class="page-title-area">
+    <div>
+        <h1 class="page-title"><i class="fas fa-user-plus" style="color: var(--accent-color); margin-right: 8px;"></i> User Creation Dashboard</h1>
+        <p class="page-subtitle">Provision new student, lecturer, or administrator accounts on the system.</p>
+    </div>
+</div>
+
+<div class="dashboard-grid" style="grid-template-columns: 2fr 1fr;">
+    <!-- Left Side: Wizard Setup Form -->
+    <div class="glass-panel" style="padding: 32px;">
+        <!-- Wizard Navigation Steps -->
+        <div class="wizard-steps">
+            <div class="wizard-step active" id="step-nav-1">
+                <span class="step-num">1</span>
+                <span class="step-label">Basic Info</span>
+            </div>
+            <div class="wizard-step" id="step-nav-2">
+                <span class="step-num">2</span>
+                <span class="step-label">Role Setup</span>
+            </div>
+            <div class="wizard-step" id="step-nav-3">
+                <span class="step-num">3</span>
+                <span class="step-label">Review</span>
+            </div>
+        </div>
+
+        <!-- Wizard Panel 1: Basic Info & Identity Verification -->
+        <div class="wizard-panel active" id="step-panel-1">
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 20px;">Step 1: Account Info & Identity Verification</h3>
+            <div class="form-group">
+                <label class="form-label" for="FormFullName">Full Name</label>
+                <input class="form-input" id="FormFullName" placeholder="e.g. Johnathan Doe" oninput="updatePreview()" />
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="FormEmail">Email Address / Identifier</label>
+                <input class="form-input" id="FormEmail" type="email" placeholder="e.g. jdoe@portal.edu" oninput="updatePreview()" />
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label" for="FormDocType">Verification Doc Type</label>
+                    <select class="form-select" id="FormDocType" onchange="updatePreview()">
+                        <option value="National ID Card (IC)">National ID Card (IC)</option>
+                        <option value="Passport">Passport</option>
+                        <option value="Student Card">Student Card</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="FormDocNumber">Document Number</label>
+                    <input class="form-input" id="FormDocNumber" placeholder="e.g. IC-980102-14-5567" oninput="updatePreview()" />
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: 16px; display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="FormVerifyConfirm" style="width: 18px; height: 18px; accent-color: var(--accent-color); cursor: pointer;" />
+                <label for="FormVerifyConfirm" style="font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                    I confirm manual identity verification has been performed against the official records.
+                </label>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 32px;">
+                <button class="btn-portal" onclick="goToStep(2)">Continue <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
+
+        <!-- Wizard Panel 2: Role Details & FIDO2 Enrollment -->
+        <div class="wizard-panel" id="step-panel-2">
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 20px;">Step 2: Role Authorization & FIDO2 Enrollment</h3>
+            
+            <div class="form-group">
+                <label class="form-label" for="FormRole">System Role Type</label>
+                <select class="form-select" id="FormRole" onchange="toggleRoleFields(); updatePreview();">
+                    <option value="student">Student Account</option>
+                    <option value="lecturer">Lecturer Account</option>
+                    <option value="admin">System Administrator</option>
+                </select>
+            </div>
+
+            <!-- Student Fields -->
+            <div id="role-fields-student">
+                <div class="form-group">
+                    <label class="form-label" for="FormMajor">Major / Study Program</label>
+                    <select class="form-select" id="FormMajor" onchange="updatePreview()">
+                        <option value="Software Engineering">B.Sc. Software Engineering</option>
+                        <option value="Artificial Intelligence">B.Sc. Artificial Intelligence</option>
+                        <option value="Cyber Security">B.Sc. Cyber Security & Forensics</option>
+                        <option value="Data Science">B.Sc. Data Science</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="FormIntake">Academic Intake Term</label>
+                    <select class="form-select" id="FormIntake">
+                        <option>September 2026</option>
+                        <option>March 2026</option>
+                        <option>June 2026</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Lecturer Fields -->
+            <div id="role-fields-lecturer" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label" for="FormDept">Department Office</label>
+                    <select class="form-select" id="FormDept" onchange="updatePreview()">
+                        <option value="Faculty of Computing">School of Computing & IT</option>
+                        <option value="Faculty of Engineering">School of Engineering</option>
+                        <option value="Faculty of Business">School of Business Administration</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="FormOffice">Office Room Location</label>
+                    <input class="form-input" id="FormOffice" placeholder="e.g. Block C, Level 4, Room 402" />
+                </div>
+            </div>
+
+            <!-- Admin Fields -->
+            <div id="role-fields-admin" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label" for="FormClearance">Clearance Level</label>
+                    <select class="form-select" id="FormClearance" onchange="updatePreview()">
+                        <option value="L1 Access">L1 - Basic Operator</option>
+                        <option value="L2 Access">L2 - Security Analyst</option>
+                        <option value="L3 SuperAdmin">L3 - Full SuperAdmin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="FormSecurityGroup">Authorized Security Policy Group</label>
+                    <select class="form-select" id="FormSecurityGroup">
+                        <option>Sec_Group_Standard_Admin</option>
+                        <option>Sec_Group_Root_Core</option>
+                    </select>
+                </div>
+            </div>
+
+            <h4 style="font-size: 0.95rem; font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 20px; margin-bottom: 12px; color: var(--accent-color);"><i class="fas fa-fingerprint"></i> FIDO2 Enrollment Status</h4>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 14px;">New accounts are created as PendingEnrollment. The user's passkey authenticator is registered later through the FIDO2 registration flow and saved automatically as the device.</p>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 32px;">
+                <button class="btn-portal-secondary" onclick="goToStep(1)"><i class="fas fa-arrow-left"></i> Back</button>
+                <button class="btn-portal" onclick="goToStep(3)">Review Account <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
+
+        <!-- Wizard Panel 3: Review -->
+        <div class="wizard-panel" id="step-panel-3">
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 20px;">Step 3: Review User & Create Pending Account</h3>
+            
+            <div style="background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 12px 0; color: var(--text-secondary); font-weight: 500;">User Name:</td>
+                        <td style="padding: 12px 0; font-weight: 700; text-align: right;" id="rev-name">-</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 12px 0; color: var(--text-secondary); font-weight: 500;">Login Email:</td>
+                        <td style="padding: 12px 0; font-weight: 600; text-align: right;" id="rev-email">-</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 12px 0; color: var(--text-secondary); font-weight: 500;">Assigned Role:</td>
+                        <td style="padding: 12px 0; text-align: right;" id="rev-role">-</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 12px 0; color: var(--text-secondary); font-weight: 500;">Specialization / Detail:</td>
+                        <td style="padding: 12px 0; font-style: italic; text-align: right;" id="rev-detail">-</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 12px 0; color: var(--text-secondary); font-weight: 500;">Identity Verified:</td>
+                        <td style="padding: 12px 0; font-weight: 600; color: #10b981; text-align: right;" id="rev-verification">-</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px 0; color: var(--text-secondary); font-weight: 500;">Account Status:</td>
+                        <td style="padding: 12px 0; font-weight: 700; color: var(--accent-color); text-align: right;">PendingEnrollment</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 32px;">
+                <button class="btn-portal-secondary" onclick="goToStep(2)"><i class="fas fa-arrow-left"></i> Back</button>
+                <button class="btn-portal" onclick="submitUserForm()">Create Pending Account <i class="fas fa-check"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side: Real-time Profile Preview Card -->
+    <div>
+        <div class="glass-panel" style="padding: 24px; position: sticky; top: 104px; text-align: center;">
+            <h4 style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 16px;">Real-Time Preview</h4>
+            
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 0;">
+                <div class="avatar-initials" id="preview-avatar" style="width: 72px; height: 72px; font-size: 1.75rem; border-color: var(--accent-color);">JD</div>
+                <div>
+                    <h5 id="preview-name" style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">Johnathan Doe</h5>
+                    <span class="demo-badge student" id="preview-role-badge">student</span>
+                </div>
+                <div style="width: 100%; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 8px; text-align: left; font-size: 0.8rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="color: var(--text-secondary);">Email:</span>
+                        <span id="preview-email" style="font-weight: 500; word-break: break-all;">jdoe@portal.edu</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary);">Focus:</span>
+                        <span id="preview-detail" style="font-weight: 500; text-align: right;">Software Engineering</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Panel: Recently Created Users -->
+<div class="glass-panel" style="padding: 24px; margin-top: 24px;">
+    <h3 class="card-title" style="margin-bottom: 20px;">Provisioned Accounts</h3>
+    <div class="table-responsive">
+        <table class="portal-table" id="new-users-table">
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>User ID</th>
+                    <th>Email Address</th>
+                    <th>System Role</th>
+                    <th>Details</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    var detailText = string.IsNullOrWhiteSpace(user.Address) ? "N/A" : user.Address;
+                    
+                    <tr>
+                        <td><strong>@user.FullName</strong></td>
+                        <td><code>@user.StudentStaffId</code></td>
+                        <td>@user.Email</td>
+                        <td><span class="demo-badge @user.RoleId">@user.RoleId</span></td>
+                        <td>@detailText</td>
+                        <td>
+                            <span class="status-badge status-success">@user.Status</span>
+                        </td>
+                        <td>
+                            @if (user.Email != ViewBag.UserEmail && user.Email != "superadmin@university.edu")
+                            {
+                                <button class="btn-portal-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #ef4444; border-color: rgba(239,68,68,0.2);" onclick="deleteUser(this, '@user.UserId', '@user.FullName')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            }
+                            else
+                            {
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Protected</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Handle steps navigation
+        function goToStep(stepNum) {
+            // Validate Step 1 if moving forward to step 2 or 3
+            if (stepNum >= 2) {
+                const name = document.getElementById("FormFullName").value.trim();
+                const email = document.getElementById("FormEmail").value.trim();
+                const docNo = document.getElementById("FormDocNumber").value.trim();
+                const verified = document.getElementById("FormVerifyConfirm").checked;
+
+                if (!name) {
+                    showToast("Please enter the user's Full Name!", "error");
+                    return;
+                }
+                if (name.length < 3) {
+                    showToast("Full Name must be at least 3 characters long!", "error");
+                    return;
+                }
+                const nameRegex = /^[a-zA-Z\s.-]+$/;
+                if (!nameRegex.test(name)) {
+                    showToast("Full Name can only contain letters, spaces, dots, and hyphens!", "error");
+                    return;
+                }
+
+                if (!email) {
+                    showToast("Please enter an Email Address!", "error");
+                    return;
+                }
+                const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                if (!emailRegex.test(email)) {
+                    showToast("Please enter a valid Email Address format!", "error");
+                    return;
+                }
+
+                if (!docNo) {
+                    showToast("Please enter the Verification Document Number!", "error");
+                    return;
+                }
+                if (docNo.length < 5) {
+                    showToast("Document Number must be at least 5 characters long!", "error");
+                    return;
+                }
+                const docRegex = /^[a-zA-Z0-9\s-]+$/;
+                if (!docRegex.test(docNo)) {
+                    showToast("Document Number can only contain alphanumeric characters, spaces, and hyphens!", "error");
+                    return;
+                }
+
+                if (!verified) {
+                    showToast("Please confirm manual identity verification!", "warning");
+                    return;
+                }
+            }
+
+            // Validate Step 2 if moving forward to step 3
+            if (stepNum >= 3) {
+                const roleVal = document.getElementById("FormRole").value;
+                if (roleVal === "lecturer") {
+                    const office = document.getElementById("FormOffice").value.trim();
+                    if (!office) {
+                        showToast("Please enter the Lecturer's Office Room Location!", "error");
+                        return;
+                    }
+                    if (office.length < 2) {
+                        showToast("Office Room Location must be at least 2 characters!", "error");
+                        return;
+                    }
+                }
+            }
+
+            document.querySelectorAll(".wizard-panel").forEach(p => p.classList.remove("active"));
+            document.querySelectorAll(".wizard-step").forEach(s => s.classList.remove("active"));
+
+            document.getElementById(`step-panel-${stepNum}`).classList.add("active");
+            document.getElementById(`step-nav-${stepNum}`).classList.add("active");
+            
+            if (stepNum >= 2) {
+                document.getElementById(`step-nav-1`).classList.add("completed");
+            } else {
+                document.getElementById(`step-nav-1`).classList.remove("completed");
+            }
+            if (stepNum >= 3) {
+                document.getElementById(`step-nav-2`).classList.add("completed");
+                
+                document.getElementById("rev-name").textContent = document.getElementById("FormFullName").value;
+                document.getElementById("rev-email").textContent = document.getElementById("FormEmail").value;
+                
+                const roleVal = document.getElementById("FormRole").value;
+                document.getElementById("rev-role").textContent = roleVal.toUpperCase();
+                
+                let detail = "";
+                if (roleVal === "student") {
+                    detail = document.getElementById("FormMajor").value;
+                } else if (roleVal === "lecturer") {
+                    detail = document.getElementById("FormDept").value + " (Office: " + document.getElementById("FormOffice").value.trim() + ")";
+                } else {
+                    detail = document.getElementById("FormClearance").value;
+                }
+                document.getElementById("rev-detail").textContent = detail;
+
+                // Set verification summary
+                const docType = document.getElementById("FormDocType").value;
+                const docNo = document.getElementById("FormDocNumber").value;
+                
+                document.getElementById("rev-verification").textContent = `${docType} [${docNo}]`;
+            } else {
+                document.getElementById(`step-nav-2`).classList.remove("completed");
+            }
+        }
+
+        // Toggle Fields based on Role selection
+        function toggleRoleFields() {
+            const role = document.getElementById("FormRole").value;
+            
+            document.getElementById("role-fields-student").style.display = "none";
+            document.getElementById("role-fields-lecturer").style.display = "none";
+            document.getElementById("role-fields-admin").style.display = "none";
+
+            document.getElementById(`role-fields-${role}`).style.display = "block";
+        }
+
+        // Real-time Preview Card update
+        function updatePreview() {
+            const name = document.getElementById("FormFullName").value.trim() || "Johnathan Doe";
+            const email = document.getElementById("FormEmail").value.trim() || "jdoe@portal.edu";
+            const role = document.getElementById("FormRole").value;
+            
+            let detail = "";
+            if (role === "student") {
+                detail = document.getElementById("FormMajor").value;
+            } else if (role === "lecturer") {
+                const office = document.getElementById("FormOffice").value.trim();
+                detail = document.getElementById("FormDept").value + (office ? ` (Office: ${office})` : "");
+            } else {
+                detail = document.getElementById("FormClearance").value;
+            }
+
+            document.getElementById("preview-name").textContent = name;
+            document.getElementById("preview-email").textContent = email;
+            document.getElementById("preview-detail").textContent = detail;
+
+            const initials = name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+            document.getElementById("preview-avatar").textContent = initials || "JD";
+
+            const badge = document.getElementById("preview-role-badge");
+            badge.textContent = role;
+            badge.className = `demo-badge ${role}`;
+        }
+
+        // Submit Wizard form
+        function submitUserForm() {
+            const name = document.getElementById("FormFullName").value.trim();
+            const email = document.getElementById("FormEmail").value.trim();
+            const role = document.getElementById("FormRole").value;
+            const docType = document.getElementById("FormDocType").value;
+            const docNo = document.getElementById("FormDocNumber").value.trim();
+            
+            let detail = "";
+            if (role === "student") {
+                detail = document.getElementById("FormMajor").value;
+            } else if (role === "lecturer") {
+                detail = document.getElementById("FormDept").value + " (Office: " + document.getElementById("FormOffice").value.trim() + ")";
+            } else {
+                detail = document.getElementById("FormClearance").value;
+            }
+
+            const formData = new FormData();
+            formData.append("username", name);
+            formData.append("email", email);
+            formData.append("roleId", role);
+            formData.append("detail", detail);
+            formData.append("verificationDoc", `${docType} [${docNo}]`);
+
+            fetch("/Portal/ActionCreateUser", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(`User account for ${name} created as PendingEnrollment.`, "success");
+                    
+                    // Reset wizard
+                    goToStep(1);
+                    document.getElementById("FormFullName").value = "";
+                    document.getElementById("FormEmail").value = "";
+                    document.getElementById("FormDocNumber").value = "";
+                    document.getElementById("FormVerifyConfirm").checked = false;
+                    document.getElementById("FormRole").value = "student";
+                    document.getElementById("FormOffice").value = "";
+                    toggleRoleFields();
+                    updatePreview();
+
+                    // Reload page after a delay to show the strongly-typed row
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || "Error creating user account", "error");
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+        // Delete user logic
+        function deleteUser(button, userId, userName) {
+            if (!confirm(`Are you sure you want to delete user "${userName}"? This will permanently remove their credentials, sessions, and registered devices.`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("userId", userId);
+
+            fetch("/Portal/ActionDeleteUser", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const row = button.closest("tr");
+                    row.style.transform = "translateX(50px)";
+                    row.style.opacity = "0";
+                    row.style.transition = "all 0.3s ease";
+                    
+                    setTimeout(() => {
+                        row.remove();
+                        showToast(`User ${userName} deleted successfully!`, "success");
+                    }, 300);
+                } else {
+                    showToast(data.message || "Error deleting user", "error");
+                }
+            })
+            .catch(err => console.error(err));
+        }
+    </script>
+}
+

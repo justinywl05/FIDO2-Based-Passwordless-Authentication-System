@@ -1,0 +1,303 @@
+@{
+    ViewData["Title"] = "My Profile";
+    Layout = "~/Views/Shared/_PortalLayout.cshtml";
+    var userCredentials = ViewBag.UserCredentials as List<NexusUniversityWebPortal.AuthBackend.Models.Credential> ?? new List<NexusUniversityWebPortal.AuthBackend.Models.Credential>();
+}
+
+<div class="page-title-area">
+    <div>
+        <h1 class="page-title">My Profile</h1>
+        <p class="page-subtitle">Configure your personal preferences and account security parameters.</p>
+    </div>
+</div>
+
+<div class="dashboard-grid" style="grid-template-columns: 1fr 2fr;">
+    <!-- Profile Card Summary -->
+    <div class="glass-panel" style="padding: 32px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px;">
+        <div class="avatar-initials" style="width: 100px; height: 100px; font-size: 2.5rem; border-width: 4px; box-shadow: 0 0 20px var(--glow-color);">
+            @if (!string.IsNullOrEmpty(ViewBag.FullName))
+            {
+                @string.Concat(ViewBag.FullName.Split(' ')[0][0], ViewBag.FullName.Split(' ').Length > 1 ? ViewBag.FullName.Split(' ')[1][0] : "")
+            }
+        </div>
+        
+        <div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 4px;">@ViewBag.FullName</h3>
+            <span class="demo-badge @ViewBag.RoleId" style="margin-bottom: 8px;">@ViewBag.RoleId</span>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px;"><i class="far fa-envelope"></i> @ViewBag.UserEmail</p>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);"><i class="far fa-id-badge"></i> ID: @ViewBag.UserId</p>
+        </div>
+        
+        <div style="width: 100%; border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px; text-align: left; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                <span style="color: var(--text-secondary);">Portal Status:</span>
+                <span style="font-weight: 600; color: #10b981;">Active</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                <span style="color: var(--text-secondary);">Security Level:</span>
+                <span style="font-weight: 600; color: @(userCredentials.Any() ? "#10b981" : "#3b82f6");">
+                    @(userCredentials.Any() ? "FIDO2 Enforced" : "Standard Secure")
+                </span>
+            </div>
+        </div>
+
+        <button class="btn-portal-secondary" style="width: 100%; padding: 10px;" onclick="showToast('Upload feature is mock only', 'warning')">
+            <i class="fas fa-camera"></i> Change Photo
+        </button>
+    </div>
+
+    <!-- Details and Settings Panels -->
+    <div class="glass-panel" style="padding: 32px;">
+        <div class="profile-tabs">
+            <div class="profile-tab active" data-tab="personal">Personal Info</div>
+            <div class="profile-tab" data-tab="security">IAM Security</div>
+            <div class="profile-tab" data-tab="custom">Customization</div>
+        </div>
+
+        <!-- Personal Info Tab -->
+        <div class="profile-tab-content active" id="personal-tab">
+            <form onsubmit="event.preventDefault(); showToast('Personal info saved!', 'success');">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">First Name</label>
+                        <input class="form-input" value="@ViewBag.FullName.Split(' ')[0]" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name</label>
+                        <input class="form-input" value="@(ViewBag.FullName.Split(' ').Length > 1 ? ViewBag.FullName.Split(' ')[1] : "")" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input class="form-input" type="tel" value="@ViewBag.UserPhone" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mailing Address</label>
+                    <input class="form-input" value="@ViewBag.UserAddress" />
+                </div>
+                <button type="submit" class="btn-portal" style="padding: 10px 20px;">Save Profile</button>
+            </form>
+        </div>
+
+        <!-- Security & FIDO2 Passkey Management Tab -->
+        <div class="profile-tab-content" id="security-tab">
+            <!-- 1. Passwordless Credentials List -->
+            <div style="margin-bottom: 32px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div>
+                        <h4 style="font-size: 1rem; font-weight: 700;">Passwordless Credentials (FIDO2 / Passkey)</h4>
+                        <p style="font-size: 0.8rem; color: var(--text-secondary);">Biometric authenticators and security tokens linked to this account. To add a new device, go to <a href="/Portal/MyDevices" style="color:var(--accent-color);">My Devices</a>.</p>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 12px; background: rgba(0,0,0,0.1);">
+                    <table class="portal-table" style="font-size: 0.8rem;">
+                        <thead>
+                            <tr>
+                                <th>Name / Identifier</th>
+                                <th>Attestation</th>
+                                <th>Transports</th>
+                                <th>Sign Count</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!userCredentials.Any())
+                            {
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                                        <i class="fas fa-key" style="font-size: 1.5rem; display: block; margin-bottom: 8px; opacity: 0.3;"></i>
+                                        No passkeys registered. Enable passwordless security for protection against phishing.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var cred in userCredentials)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@cred.CredentialId</strong>
+                                            <code style="display: block; font-size: 0.65rem; color: var(--text-muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Key: @cred.PublicKey</code>
+                                        </td>
+                                        <td><span style="text-transform: uppercase;">@cred.AttestationFormat</span></td>
+                                        <td style="text-transform: capitalize;">@cred.Transports</td>
+                                        <td>@cred.SignCount</td>
+                                        <td><span class="status-badge status-success">@cred.Status</span></td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+            </div>
+
+            <!-- Registered FIDO2 Devices List -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 24px; margin-bottom: 32px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div>
+                        <h4 style="font-size: 1rem; font-weight: 700;">Registered FIDO2 Devices</h4>
+                        <p style="font-size: 0.8rem; color: var(--text-secondary);">Devices are added automatically when a passkey authenticator is registered.</p>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 12px; background: rgba(0,0,0,0.1);">
+                    <table class="portal-table" style="font-size: 0.8rem;">
+                        <thead>
+                            <tr>
+                                <th>Device Name</th>
+                                <th>Type</th>
+                                <th>Registered</th>
+                                <th>Last Active</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var userDevices = ViewBag.UserDevices as List<NexusUniversityWebPortal.AuthBackend.Models.Device> ?? new List<NexusUniversityWebPortal.AuthBackend.Models.Device>();
+                            }
+                            @if (!userDevices.Any())
+                            {
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                                        <i class="fas fa-laptop" style="font-size: 1.5rem; display: block; margin-bottom: 8px; opacity: 0.3;"></i>
+                                        No FIDO2 devices registered yet.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var dev in userDevices)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <i class="@(dev.DeviceType.ToLower() == "mobile" ? "fas fa-mobile-alt" : dev.DeviceType.ToLower() == "tablet" ? "fas fa-tablet-alt" : "fas fa-laptop")" style="color: var(--accent-color); font-size: 1.1rem;"></i>
+                                                <strong>@dev.DeviceName</strong>
+                                            </div>
+                                        </td>
+                                        <td>@dev.DeviceType</td>
+                                        <td>@dev.RegisteredAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td>@dev.RegisteredAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td>
+                                            <span class="status-badge @(dev.Status == "Approved" ? "status-success" : dev.Status == "Pending" || dev.Status == "Pending Approval" ? "status-pending" : "status-danger")">
+                                                @dev.Status
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 2. Cryptographic Mechanism Insight -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 24px; margin-bottom: 32px;">
+                <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px; color: var(--accent-color);">
+                    <i class="fas fa-shield-halved" style="margin-right: 6px;"></i> Phishing-Resistant FIDO2 Cryptographic Model
+                </h4>
+                <p style="font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary); margin-bottom: 16px;">
+                    Unlike legacy password-based authentication, this student portal operates under a passwordless FIDO2 standard. High-security asymmetric cryptography verifies the client credentials:
+                </p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 0.75rem; line-height: 1.4; margin-bottom: 16px;">
+                    <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.05);">
+                        <strong style="color: var(--text-primary);"><i class="fas fa-lock-open" style="color: #10b981; margin-right: 4px;"></i> Public Key (Stored on Server)</strong>
+                        <p style="color: var(--text-muted); margin-top: 4px;">Shared openly with the portal server during registration. Challenges from the server must be signed with your private key before access is granted.</p>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.05);">
+                        <strong style="color: var(--text-primary);"><i class="fas fa-key" style="color: var(--accent-color); margin-right: 4px;"></i> Private Key (Secure Enclave / TPM)</strong>
+                        <p style="color: var(--text-muted); margin-top: 4px;">Retained inside your physical device's hardware security module (Secure Enclave or TPM). It never leaves the device and is only unlocked via local biometrics.</p>
+                    </div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: flex-start; gap: 8px; line-height: 1.4;">
+                    <i class="fas fa-info-circle" style="color: var(--accent-color); margin-top: 2px;"></i>
+                    <span><strong>Phishing-Resistant Origin Binding:</strong> Credentials are cryptographically bound to the specific domain (e.g. <code>localhost</code>). Authenticators block login requests originating from mismatched or lookalike phishing domains.</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Customization Tab -->
+        <div class="profile-tab-content" id="custom-tab">
+            <div style="margin-bottom: 32px;">
+                <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px;">Accent Theme Color</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">Pick a color accent that styles your portal sidebar indicator, buttons, and graphics.</p>
+                <div style="display: flex; gap: 12px;">
+                    <span class="color-option color-purple" data-color="violet" title="Violet"></span>
+                    <span class="color-option color-emerald" data-color="emerald" title="Emerald"></span>
+                    <span class="color-option color-amber" data-color="amber" title="Amber"></span>
+                    <span class="color-option color-crimson" data-color="crimson" title="Crimson"></span>
+                    <span class="color-option color-indigo" data-color="indigo" title="Indigo"></span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px;">Light / Dark Mode</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">Toggle standard visual lighting parameters.</p>
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn-portal-secondary" style="padding: 8px 16px;" onclick="document.documentElement.setAttribute('data-theme', 'light'); localStorage.setItem('portal-theme', 'light'); updateThemeToggleIcon('light'); showToast('Light mode active', 'info');">
+                        <i class="fas fa-sun"></i> Light Mode
+                    </button>
+                    <button class="btn-portal-secondary" style="padding: 8px 16px;" onclick="document.documentElement.setAttribute('data-theme', 'dark'); localStorage.setItem('portal-theme', 'dark'); updateThemeToggleIcon('dark'); showToast('Dark mode active', 'info');">
+                        <i class="fas fa-moon"></i> Dark Mode
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@section Scripts {
+    <style>
+        @@keyframes pulse-glow {
+            0% { transform: scale(0.95); opacity: 0.6; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.6; }
+        }
+        @@keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Tab switching logic
+            const tabs = document.querySelectorAll(".profile-tab");
+            const contents = document.querySelectorAll(".profile-tab-content");
+
+            tabs.forEach(tab => {
+                tab.addEventListener("click", () => {
+                    tabs.forEach(t => t.classList.remove("active"));
+                    contents.forEach(c => c.classList.remove("active"));
+
+                    tab.classList.add("active");
+                    const tabId = tab.getAttribute("data-tab");
+                    document.getElementById(`${tabId}-tab`).classList.add("active");
+                });
+            });
+
+            // Accent selection logic
+            const colorOptions = document.querySelectorAll(".color-option");
+            const activeAccent = localStorage.getItem("portal-accent") || "violet";
+            
+            colorOptions.forEach(opt => {
+                if (opt.getAttribute("data-color") === activeAccent) {
+                    opt.classList.add("active");
+                }
+                opt.addEventListener("click", () => {
+                    const color = opt.getAttribute("data-color");
+                    setAccentColor(color);
+                });
+            });
+        });
+
+        // Toggle MFA state
+        function toggleMfaCheckbox(chk) {
+            showToast(chk.checked ? "QR MFA login enforcement enabled!" : "QR MFA login enforcement disabled!", "info");
+        }
+
+    </script>
+}
