@@ -4,14 +4,14 @@ An integrated web portal and management system developed as a Final Year Project
 
 ---
 
-## 📄 Project Documentation & Report
+## Project Documentation & Report
 
 The comprehensive project documentation and written analysis have been published:
-Final Year Project Written Report.pdf
+[Final Year Project Written Report.pdf](https://github.com/justinywl05/FIDO2-Based-Passwordless-Authentication-System/blob/main/Final%20Year%20Project%20Written%20Report.pdf)
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
 - **Secure Authentication & Role Management**: Multi-tier authentication system for students, faculty, and administrators.
 - **Dynamic QR Code Integration**: Fast, contact-free verification and attendance tracking via generated QR codes.
@@ -20,7 +20,7 @@ Final Year Project Written Report.pdf
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 - **Backend**: ASP.NET Core (C#) / Web API
 - **Frontend**: HTML5, CSS3, JavaScript / Modern Web Framework
@@ -29,7 +29,7 @@ Final Year Project Written Report.pdf
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - [.NET SDK](https://dotnet.microsoft.com/download) (v8.0 or compatible)
@@ -42,6 +42,6 @@ Refer to the appendix in the written report
 
 ---
 
-## 📝 License & Disclaimer
+##  License & Disclaimer
 
 This project was built for academic evaluation as a Final Year Project. Feel free to use it for educational purposes.
